@@ -30,6 +30,16 @@ from contextlib import asynccontextmanager
 
 IRAN_TZ = ZoneInfo("Asia/Tehran")
 
+async def _periodic_state_saver():
+    while True:
+        try:
+            await asyncio.sleep(30)
+            await save_state()
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.warning(f"Periodic save error: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global http_client
@@ -43,11 +53,13 @@ async def lifespan(app: FastAPI):
     # Start SOCKS5 TCP server
     from relay_socks5 import start_socks5_tcp_server
     socks_tcp_task = asyncio.create_task(start_socks5_tcp_server())
+    save_task = asyncio.create_task(_periodic_state_saver())
     
     log_activity("system", "سرور راه‌اندازی شد", "ok")
     logger.info(f"FilterGosha Panel v1.3.3 started on port {CONFIG['port']}")
     yield
     
+    save_task.cancel()
     socks_tcp_task.cancel()
     await save_state()
     if http_client:
@@ -73,6 +85,8 @@ SAVE_LOCK = asyncio.Lock()
 def init_db():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DATA_DB) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute("CREATE TABLE IF NOT EXISTS links (uuid TEXT PRIMARY KEY, data TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS subs (sub_id TEXT PRIMARY KEY, data TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")

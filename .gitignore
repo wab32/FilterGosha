@@ -1,2 +1,24 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# FilterGosha Persistent Data & Local State (Keep out of Git to preserve Railway Volume sync)
+data/
+*.db
+*.db-wal
+*.db-shm
+*.key
+*.bak
