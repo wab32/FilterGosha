@@ -466,14 +466,29 @@ select.inp{appearance:none;cursor:pointer}
         <div class="form-g"><label>واحد حجم</label><select class="inp" id="sub-limit-unit"><option value="GB">گیگابایت (GB)</option><option value="MB">مگابایت (MB)</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-g"><label>اعتبار (روز - 0 = نامحدود)</label><input class="inp" type="number" id="sub-exp" value="0"></div>
         <div class="form-g"><label>محدودیت آی‌پی همزمان (0 = نامحدود)</label><input class="inp" type="number" id="sub-iplimit" value="0"></div>
+        <div class="form-g"><label>محدودیت سرعت (0 = نامحدود)</label><input class="inp" type="number" step="0.1" id="sub-speed-val" value="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-g"><label>محدودیت سرعت (0 = نامحدود)</label><input class="inp" type="number" step="0.1" id="sub-speed-val" value="0"></div>
         <div class="form-g"><label>واحد سرعت</label><select class="inp" id="sub-speed-unit"><option value="MBIT">مگابیت/ثانیه (Mbps)</option><option value="KB">کیلوبایت/ثانیه (KB/s)</option></select></div>
+        <div class="form-g"><label>توضیحات / یادداشت</label><input class="inp" id="sub-note" placeholder="توضیحات اختیاری..."></div>
       </div>
-      <div class="form-g"><label>توضیحات / یادداشت</label><input class="inp" id="sub-note" placeholder="توضیحات اختیاری..."></div>
+      <div class="form-g" style="background:rgba(255,255,255,0.02);border:1px solid var(--card-b);padding:12px;border-radius:12px;margin-bottom:12px">
+        <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span><i class="ti ti-calendar-time" style="color:var(--accent)"></i> تاریخ و زمان انقضا</span>
+          <span id="sub-exp-shamsi" style="font-size:11px;color:var(--accent);font-weight:600">نامحدود (بدون انقضا)</span>
+        </label>
+        <input class="inp" type="datetime-local" id="sub-exp-date" onchange="updateExpShamsi('sub')" oninput="updateExpShamsi('sub')">
+        <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 0)">نامحدود</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 7)">۷ روزه</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 30)">۱ ماهه (۳۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 60)">۲ ماهه (۶۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 90)">۳ ماهه (۹۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 180)">۶ ماهه</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('sub', 365)">۱ ساله</button>
+        </div>
+      </div>
       <div class="form-g">
         <label>اتصال کانفیگ‌ها به این اشتراک</label>
         <div class="cfg-checklist" id="sub-links-checklist">در حال بارگذاری لیست کانفیگ‌ها...</div>
@@ -567,10 +582,25 @@ select.inp{appearance:none;cursor:pointer}
         <div class="form-g"><label>واحد حجم</label><select class="inp" id="nl-unit"><option value="GB">GB</option><option value="MB">MB</option></select></div>
       </div>
       <div class="form-row">
-        <div class="form-g"><label>اعتبار (روز - 0 = نامحدود)</label><input class="inp" type="number" id="nl-exp" value="0"></div>
         <div class="form-g"><label>محدودیت آی‌پی (0 = نامحدود)</label><input class="inp" type="number" id="nl-iplimit" value="0"></div>
+        <div class="form-g"><label>توضیحات</label><input class="inp" id="nl-note" placeholder="توضیحات اختیاری..."></div>
       </div>
-      <div class="form-g"><label>توضیحات</label><input class="inp" id="nl-note" placeholder="توضیحات اختیاری..."></div>
+      <div class="form-g" style="background:rgba(255,255,255,0.02);border:1px solid var(--card-b);padding:12px;border-radius:12px;margin-bottom:12px">
+        <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span><i class="ti ti-calendar-time" style="color:var(--accent)"></i> تاریخ و زمان انقضا</span>
+          <span id="nl-exp-shamsi" style="font-size:11px;color:var(--accent);font-weight:600">نامحدود (بدون انقضا)</span>
+        </label>
+        <input class="inp" type="datetime-local" id="nl-exp-date" onchange="updateExpShamsi('nl')" oninput="updateExpShamsi('nl')">
+        <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 0)">نامحدود</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 7)">۷ روزه</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 30)">۱ ماهه (۳۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 60)">۲ ماهه (۶۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 90)">۳ ماهه (۹۰ روز)</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 180)">۶ ماهه</button>
+          <button type="button" class="btn btn-sm btn-g" onclick="setExpPreset('nl', 365)">۱ ساله</button>
+        </div>
+      </div>
 
       <!-- ADVANCED SETTINGS - PROTOCOL AWARE -->
       <div id="adv-settings-wrapper" style="margin-top:14px;border-top:1px dashed var(--card-b);padding-top:10px">
@@ -1029,6 +1059,57 @@ function initChart(){
   });
 }
 
+// DATEPICKER & EXPIRATION HELPERS
+function setExpPreset(prefix, days){
+  const inp = document.getElementById(prefix + '-exp-date');
+  if(!inp) return;
+  if(days <= 0){
+    inp.value = '';
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const pad = n => String(n).padStart(2, '0');
+    inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  updateExpShamsi(prefix);
+}
+
+function updateExpShamsi(prefix){
+  const inp = document.getElementById(prefix + '-exp-date');
+  const label = document.getElementById(prefix + '-exp-shamsi');
+  if(!inp || !label) return;
+  if(!inp.value){
+    label.innerHTML = '<span style="color:var(--t3)">نامحدود (بدون انقضا)</span>';
+    return;
+  }
+  const dt = new Date(inp.value);
+  if(isNaN(dt.getTime())){
+    label.innerHTML = '<span style="color:var(--t3)">نامحدود</span>';
+    return;
+  }
+  const now = new Date();
+  const diffDays = Math.ceil((dt - now) / (1000 * 60 * 60 * 24));
+  const shamsiStr = dt.toLocaleDateString('fa-IR', { year:'numeric', month:'long', day:'numeric' }) + ' ساعت ' + dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+  if(dt < now){
+    label.innerHTML = `<span style="color:var(--red-t);font-weight:700">⚠️ منقضی شده (${shamsiStr})</span>`;
+  } else {
+    label.innerHTML = `<span style="color:var(--green-t)">✓ ${shamsiStr} (${diffDays} روز دیگر)</span>`;
+  }
+}
+
+function formatExpBadge(expStr){
+  if(!expStr) return '<span style="color:var(--t3)"><i class="ti ti-infinity"></i> نامحدود</span>';
+  const dt = new Date(expStr);
+  if(isNaN(dt.getTime())) return '<span style="color:var(--t3)">نامحدود</span>';
+  const now = new Date();
+  const dateFmt = dt.toLocaleDateString('fa-IR', { year:'numeric', month:'numeric', day:'numeric' });
+  if(dt < now){
+    return `<span class="badge bg-red" style="background:rgba(239,68,68,0.15);color:#FB8585"><i class="ti ti-clock-off"></i> منقضی شده (${dateFmt})</span>`;
+  }
+  const diffDays = Math.ceil((dt - now) / (1000 * 60 * 60 * 24));
+  return `<span class="badge bg-green" style="background:rgba(16,185,129,0.12);color:var(--accent)"><i class="ti ti-calendar"></i> ${dateFmt} (${diffDays} روز)</span>`;
+}
+
 // SUBSCRIPTION MANAGEMENT
 let allAvailableLinks = [];
 let currentSubId = '';
@@ -1049,7 +1130,6 @@ function renderSubs(subs){
   el.innerHTML=subs.map(s=>{
     const pct = s.limit_bytes === 0 ? 0 : Math.min(100, (s.used_bytes / s.limit_bytes) * 100);
     const bc = pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
-    const expText = s.expires_at ? new Date(s.expires_at).toLocaleDateString('fa-IR') : 'نامحدود';
     return `
       <div class="sub-card">
         <div class="sub-head">
@@ -1058,7 +1138,7 @@ function renderSubs(subs){
             <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
               <span class="badge bg-blue" style="margin-left:6px"><i class="ti ti-link"></i> ${s.links_count} کانفیگ</span>
               <span class="badge bg-green"><i class="ti ti-plug-connected"></i> ${s.connections} اتصال فعال</span>
-              <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${expText}</span>
+              <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(s.expires_at)}</span>
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1101,7 +1181,22 @@ async function openSubModal(sid=''){
   
   document.getElementById('sub-label').value = targetSub ? targetSub.label : '';
   document.getElementById('sub-limit-val').value = targetSub ? (targetSub.limit_bytes / (1024**3)).toFixed(1) : 0;
-  document.getElementById('sub-exp').value = 0;
+  
+  if(targetSub && targetSub.expires_at){
+    try{
+      const d = new Date(targetSub.expires_at);
+      if(!isNaN(d.getTime())){
+        const pad = n => String(n).padStart(2,'0');
+        document.getElementById('sub-exp-date').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } else {
+        document.getElementById('sub-exp-date').value = '';
+      }
+    }catch(e){ document.getElementById('sub-exp-date').value = ''; }
+  } else {
+    document.getElementById('sub-exp-date').value = '';
+  }
+  updateExpShamsi('sub');
+
   document.getElementById('sub-iplimit').value = targetSub ? targetSub.ip_limit : 0;
   document.getElementById('sub-speed-val').value = targetSub ? (targetSub.speed_limit_bytes * 8 / 1024 / 1024).toFixed(1) : 0;
   document.getElementById('sub-note').value = targetSub ? targetSub.note : '';
@@ -1126,11 +1221,12 @@ async function openSubModal(sid=''){
 document.getElementById('form-sub').addEventListener('submit',async e=>{
   e.preventDefault();
   const checkedUuids = Array.from(document.querySelectorAll('#sub-links-checklist input:checked')).map(i=>i.value);
+  const expVal = document.getElementById('sub-exp-date').value;
   const payload = {
     label: document.getElementById('sub-label').value.trim(),
     limit_value: parseFloat(document.getElementById('sub-limit-val').value)||0,
     limit_unit: document.getElementById('sub-limit-unit').value,
-    expires_days: parseInt(document.getElementById('sub-exp').value)||0,
+    expires_at: expVal ? new Date(expVal).toISOString() : null,
     ip_limit: parseInt(document.getElementById('sub-iplimit').value)||0,
     speed_limit_value: parseFloat(document.getElementById('sub-speed-val').value)||0,
     speed_limit_unit: document.getElementById('sub-speed-unit').value,
@@ -1194,6 +1290,7 @@ function renderLinks(links){
             <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
               ${protoChipText(l.protocol)}
               <span class="badge bg-blue" style="margin-right:6px"><i class="ti ti-plug-connected"></i> ${l.connected_ips||0} آی‌پی متصل</span>
+              <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(l.expires_at)}</span>
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1250,7 +1347,6 @@ async function openLinkModal(uid=''){
   currentLinkId = uid;
   document.getElementById('link-modal-title').innerHTML = uid ? '<i class="ti ti-edit"></i> ویرایش کانفیگ' : '<i class="ti ti-link"></i> ساخت کانفیگ جدید';
 
-
   let targetLink = null;
   if(uid){
     const lr=await fetch('/api/links'),ld=await lr.json();
@@ -1258,9 +1354,23 @@ async function openLinkModal(uid=''){
   }
 
   document.getElementById('nl-label').value = targetLink ? targetLink.label : '';
-
   document.getElementById('nl-val').value = targetLink ? (targetLink.limit_bytes / (1024**3)).toFixed(1) : 0;
-  document.getElementById('nl-exp').value = 0;
+  
+  if(targetLink && targetLink.expires_at){
+    try{
+      const d = new Date(targetLink.expires_at);
+      if(!isNaN(d.getTime())){
+        const pad = n => String(n).padStart(2,'0');
+        document.getElementById('nl-exp-date').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } else {
+        document.getElementById('nl-exp-date').value = '';
+      }
+    }catch(e){ document.getElementById('nl-exp-date').value = ''; }
+  } else {
+    document.getElementById('nl-exp-date').value = '';
+  }
+  updateExpShamsi('nl');
+
   document.getElementById('nl-iplimit').value = targetLink ? targetLink.ip_limit : 0;
   document.getElementById('nl-note').value = targetLink ? (targetLink.note || '') : '';
   document.getElementById('nl-clean-ip').value = targetLink ? (targetLink.clean_ip || '') : '';
@@ -1288,13 +1398,14 @@ async function openLinkModal(uid=''){
 
 document.getElementById('form-link').addEventListener('submit',async e=>{
   e.preventDefault();
+  const expVal = document.getElementById('nl-exp-date').value;
   const payload={
     label: document.getElementById('nl-label').value.trim(),
     protocol: document.getElementById('nl-proto').value||'vless-ws',
     clean_ip: document.getElementById('nl-clean-ip').value.trim()||"",
     limit_value: parseFloat(document.getElementById('nl-val').value)||0,
     limit_unit: document.getElementById('nl-unit').value,
-    expires_days: parseInt(document.getElementById('nl-exp').value)||0,
+    expires_at: expVal ? new Date(expVal).toISOString() : null,
     ip_limit: parseInt(document.getElementById('nl-iplimit').value)||0,
     note: document.getElementById('nl-note').value.trim(),
     clean_ip: document.getElementById('nl-clean-ip').value.trim(),
@@ -1529,7 +1640,10 @@ function renderContent(d){{
       <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:8px"><i class="ti ti-users-group"></i> اشتراک اختصاصی VLESS</div>
       <div class="sub-name">${{esc(d.name)}}</div>
       ${{d.desc ? `<div class="sub-desc">${{esc(d.desc)}}</div>` : ''}}
-      <div style="font-size:10.5px;color:var(--t3);margin-bottom:14px"><i class="ti ti-clock"></i> بروزرسانی: ${{new Date().toLocaleTimeString('fa-IR')}}</div>
+      <div style="display:flex;gap:14px;font-size:10.5px;color:var(--t3);margin-bottom:14px;flex-wrap:wrap">
+        <span><i class="ti ti-clock"></i> بروزرسانی: ${{new Date().toLocaleTimeString('fa-IR')}}</span>
+        <span><i class="ti ti-calendar"></i> انقضا: <b style="color:var(--accent)">${{d.expires_at ? new Date(d.expires_at).toLocaleDateString('fa-IR', {year:'numeric',month:'long',day:'numeric'}) : 'نامحدود'}}</b></span>
+      </div>
       
       ${{d.username ? `
       <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:10px 14px; border-radius:12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">

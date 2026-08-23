@@ -5,7 +5,7 @@ import hashlib
 import secrets
 import time
 import aiofiles
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from urllib.parse import quote
 from collections import deque, defaultdict
@@ -601,8 +601,21 @@ def is_link_expired(link: dict) -> bool:
     if not exp:
         return False
     try:
-        return datetime.now() > datetime.fromisoformat(exp)
-    except Exception:
+        if isinstance(exp, str):
+            clean_exp = exp.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_exp)
+        elif isinstance(exp, (int, float)):
+            dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+        else:
+            return False
+
+        if dt.tzinfo is not None:
+            now = datetime.now(dt.tzinfo)
+        else:
+            now = datetime.now()
+        return now > dt
+    except Exception as e:
+        logger.warning(f"Error checking link expiration ({exp}): {e}")
         return False
 
 def is_sub_expired(sub: dict) -> bool:
@@ -610,8 +623,21 @@ def is_sub_expired(sub: dict) -> bool:
     if not exp:
         return False
     try:
-        return datetime.now() > datetime.fromisoformat(exp)
-    except Exception:
+        if isinstance(exp, str):
+            clean_exp = exp.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_exp)
+        elif isinstance(exp, (int, float)):
+            dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+        else:
+            return False
+
+        if dt.tzinfo is not None:
+            now = datetime.now(dt.tzinfo)
+        else:
+            now = datetime.now()
+        return now > dt
+    except Exception as e:
+        logger.warning(f"Error checking sub expiration ({exp}): {e}")
         return False
 
 def is_link_allowed(link: dict | None) -> bool:
@@ -957,6 +983,11 @@ import os
 @app.get("/api/export_db")
 async def export_db(_=Depends(require_auth)):
     await save_state()
+    try:
+        with sqlite3.connect(DATA_DB) as conn:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+    except Exception as e:
+        logger.warning(f"WAL checkpoint during export: {e}")
     return FileResponse(DATA_DB, media_type="application/octet-stream", filename="filtergosha_backup.db")
 
 @app.post("/api/import_db_analyze")
@@ -1304,8 +1335,14 @@ async def create_link(request: Request, _=Depends(require_auth)):
     lv = float(body.get("limit_value") or 0)
     lu = body.get("limit_unit") or "GB"
     limit_bytes = 0 if lv <= 0 else parse_size_to_bytes(lv, lu)
-    exp_days = int(body.get("expires_days") or 0)
-    expires_at = (datetime.now() + timedelta(days=exp_days)).isoformat() if exp_days > 0 else None
+    
+    expires_at = body.get("expires_at")
+    if not expires_at:
+        exp_days = int(body.get("expires_days") or 0)
+        expires_at = (datetime.now() + timedelta(days=exp_days)).isoformat() if exp_days > 0 else None
+    else:
+        expires_at = str(expires_at).strip()
+    
     try:
         port = int(body.get("port") or DEFAULT_PORT)
     except (TypeError, ValueError):
@@ -1398,7 +1435,9 @@ async def update_link(uid: str, request: Request, _=Depends(require_auth)):
             lv = float(body.get("limit_value") or 0)
             lu = body.get("limit_unit") or "GB"
             link["limit_bytes"] = 0 if lv <= 0 else parse_size_to_bytes(lv, lu)
-        if "expires_days" in body:
+        if "expires_at" in body:
+            link["expires_at"] = str(body["expires_at"]).strip() if body["expires_at"] else None
+        elif "expires_days" in body:
             ed = int(body["expires_days"] or 0)
             link["expires_at"] = (datetime.now() + timedelta(days=ed)).isoformat() if ed > 0 else None
         if "fingerprint" in body:
@@ -1433,7 +1472,10 @@ async def update_link(uid: str, request: Request, _=Depends(require_auth)):
         if "mux_enable" in body:
             link["mux_enable"] = bool(body["mux_enable"])
         if "mux_concurrency" in body:
-            link["mux_concurrency"] = max(1, int(body.get("mux_concurrency") or 8))
+            try:
+                link["mux_concurrency"] = max(1, int(body["mux_concurrency"]))
+            except (TypeError, ValueError):
+                link["mux_concurrency"] = 8
         if "custom_uri" in body:
             link["custom_uri"] = str(body.get("custom_uri") or "").strip()
         if "speed_limit_value" in body:
@@ -1450,9 +1492,19 @@ async def update_link(uid: str, request: Request, _=Depends(require_auth)):
 
 @app.delete("/api/links/{uid}")
 async def delete_link(uid: str, _=Depends(require_auth)):
-    label = await remove_link(uid)
-    if label is None:
-        raise HTTPException(status_code=404, detail="link not found")
+    async with LINKS_LOCK:
+        if uid not in LINKS:
+            raise HTTPException(status_code=404, detail="link not found")
+        label = LINKS[uid].get("label", uid)
+        del LINKS[uid]
+        
+    async with SUBS_LOCK:
+        for sid, sub in SUBS.items():
+            if "links" in sub and uid in sub["links"]:
+                sub["links"].remove(uid)
+                
+    asyncio.create_task(save_state())
+    log_activity("link", f"کانفیگ «{label}» حذف شد", "warn")
     return {"ok": True, "deleted": uid}
 
 # ── Subscription Management APIs ──────────────────────────────────────────────
@@ -1463,8 +1515,12 @@ async def create_sub(request: Request, _=Depends(require_auth)):
     lu = body.get("limit_unit") or "GB"
     limit_bytes = 0 if lv <= 0 else parse_size_to_bytes(lv, lu)
     
-    exp_days = int(body.get("expires_days") or 0)
-    expires_at = (datetime.now() + timedelta(days=exp_days)).isoformat() if exp_days > 0 else None
+    expires_at = body.get("expires_at")
+    if not expires_at:
+        exp_days = int(body.get("expires_days") or 0)
+        expires_at = (datetime.now() + timedelta(days=exp_days)).isoformat() if exp_days > 0 else None
+    else:
+        expires_at = str(expires_at).strip()
     
     try: ip_limit = int(body.get("ip_limit") or 0)
     except: ip_limit = 0
@@ -1542,7 +1598,9 @@ async def update_sub(sid: str, request: Request, _=Depends(require_auth)):
             lv = float(body.get("limit_value") or 0)
             lu = body.get("limit_unit") or "GB"
             sub["limit_bytes"] = 0 if lv <= 0 else parse_size_to_bytes(lv, lu)
-        if "expires_days" in body:
+        if "expires_at" in body:
+            sub["expires_at"] = str(body["expires_at"]).strip() if body["expires_at"] else None
+        elif "expires_days" in body:
             ed = int(body["expires_days"] or 0)
             sub["expires_at"] = (datetime.now() + timedelta(days=ed)).isoformat() if ed > 0 else None
         if "ip_limit" in body:
