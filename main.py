@@ -33,7 +33,7 @@ IRAN_TZ = ZoneInfo("Asia/Tehran")
 async def _periodic_state_saver():
     while True:
         try:
-            await asyncio.sleep(30)
+            await asyncio.sleep(15)
             await save_state()
         except asyncio.CancelledError:
             break
@@ -134,13 +134,16 @@ async def load_state():
     try:
         with sqlite3.connect(DATA_DB) as conn:
             for row in conn.execute("SELECT uuid, data FROM links"):
-                LINKS[row[0]] = json.loads(row[1])
+                l = json.loads(row[1])
+                l["used_bytes"] = int(l.get("used_bytes") or 0)
+                LINKS[row[0]] = l
             for row in conn.execute("SELECT sub_id, data FROM subs"):
                 s = json.loads(row[1])
                 if "links" not in s:
                     s["links"] = []
                 if "username" not in s:
                     s["username"] = "".join(random.choices(string.ascii_lowercase + string.digits, k=6))
+                s["used_bytes"] = int(s.get("used_bytes") or 0)
                 SUBS[row[0]] = s
             for row in conn.execute("SELECT key, value FROM settings"):
                 if row[0] == "password_hash":
@@ -283,16 +286,21 @@ async def save_state():
     async with SAVE_LOCK:
         try:
             init_db()
+            async with LINKS_LOCK:
+                snap_links = {k: dict(v) for k, v in LINKS.items()}
+            async with SUBS_LOCK:
+                snap_subs = {k: dict(v) for k, v in SUBS.items()}
+
             with sqlite3.connect(DATA_DB) as conn:
                 conn.execute("BEGIN TRANSACTION")
                 # Links
                 conn.execute("DELETE FROM links")
                 conn.executemany("INSERT INTO links (uuid, data) VALUES (?, ?)", 
-                                 [(k, json.dumps(v, ensure_ascii=False)) for k, v in LINKS.items()])
+                                 [(k, json.dumps(v, ensure_ascii=False)) for k, v in snap_links.items()])
                 # Subs
                 conn.execute("DELETE FROM subs")
                 conn.executemany("INSERT INTO subs (sub_id, data) VALUES (?, ?)", 
-                                 [(k, json.dumps(v, ensure_ascii=False)) for k, v in SUBS.items()])
+                                 [(k, json.dumps(v, ensure_ascii=False)) for k, v in snap_subs.items()])
                 # Settings
                 conn.execute("DELETE FROM settings")
                 conn.execute("INSERT INTO settings (key, value) VALUES (?, ?)", ("password_hash", AUTH["password_hash"]))
@@ -556,12 +564,12 @@ async def check_and_use(uid: str, n: int) -> bool:
             sb = sub.get("limit_bytes", 0)
             if sb > 0 and sub.get("used_bytes", 0) >= sb:
                 return False
-            sub["used_bytes"] += n
+            sub["used_bytes"] = sub.get("used_bytes", 0) + n
             stats["total_bytes"] += n
             hourly_traffic[now_ir().strftime("%H:00")] += n
             return True
 
-    # 2. Check if uid is a Standalone Config
+    # 2. Check if uid is a Config
     async with LINKS_LOCK:
         if uid in LINKS:
             link = LINKS[uid]
@@ -570,7 +578,19 @@ async def check_and_use(uid: str, n: int) -> bool:
             lb = link.get("limit_bytes", 0)
             if lb > 0 and link.get("used_bytes", 0) >= lb:
                 return False
-            link["used_bytes"] += n
+            
+            # Check if attached to any subscription
+            async with SUBS_LOCK:
+                for sid, sub in SUBS.items():
+                    if uid in sub.get("links", []):
+                        if not sub.get("active", True) or is_sub_expired(sub):
+                            return False
+                        slb = sub.get("limit_bytes", 0)
+                        if slb > 0 and sub.get("used_bytes", 0) >= slb:
+                            return False
+                        sub["used_bytes"] = sub.get("used_bytes", 0) + n
+
+            link["used_bytes"] = link.get("used_bytes", 0) + n
             stats["total_bytes"] += n
             hourly_traffic[now_ir().strftime("%H:00")] += n
             return True
@@ -1631,6 +1651,28 @@ async def delete_sub(sid: str, _=Depends(require_auth)):
     asyncio.create_task(save_state())
     log_activity("sub", f"اشتراک «{label}» حذف شد", "err")
     return {"ok": True, "deleted": sid}
+
+@app.post("/api/subs/{sid}/reset_usage")
+async def reset_sub_usage(sid: str, _=Depends(require_auth)):
+    async with SUBS_LOCK:
+        if sid not in SUBS:
+            raise HTTPException(status_code=404, detail="sub not found")
+        SUBS[sid]["used_bytes"] = 0
+        label = SUBS[sid].get("label", sid)
+    asyncio.create_task(save_state())
+    log_activity("sub", f"مصرف اشتراک «{label}» صفر (ریست) شد", "ok")
+    return {"ok": True}
+
+@app.post("/api/links/{uid}/reset_usage")
+async def reset_link_usage(uid: str, _=Depends(require_auth)):
+    async with LINKS_LOCK:
+        if uid not in LINKS:
+            raise HTTPException(status_code=404, detail="link not found")
+        LINKS[uid]["used_bytes"] = 0
+        label = LINKS[uid].get("label", uid)
+    asyncio.create_task(save_state())
+    log_activity("link", f"مصرف کانفیگ «{label}» صفر (ریست) شد", "ok")
+    return {"ok": True}
 
 # ── VLESS Transport Routes ────────────────────────────────────────────────────
 # 1. VLESS gRPC Tunnel Route

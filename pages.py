@@ -1142,6 +1142,7 @@ function renderSubs(subs){
             </div>
           </div>
           <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-g" onclick="resetSubUsage('${s.sub_id}')" title="صفر کردن مصرف"><i class="ti ti-rotate"></i> ریست مصرف</button>
             <button class="btn btn-sm btn-g" onclick="openSubModal('${s.sub_id}')"><i class="ti ti-edit"></i> ویرایش</button>
             <button class="btn btn-sm btn-d" onclick="deleteSub('${s.sub_id}')"><i class="ti ti-trash"></i> حذف</button>
           </div>
@@ -1163,6 +1164,15 @@ function renderSubs(subs){
       </div>
     `;
   }).join('');
+}
+
+async function resetSubUsage(sid){
+  if(!confirm('آیا از صفر کردن ترافیک مصرفی این اشتراک اطمینان دارید؟')) return;
+  try{
+    const r = await fetch('/api/subs/' + sid + '/reset_usage', {method:'POST'});
+    if(r.ok){ toast('مصرف اشتراک ریست شد ✓', 'ok'); loadSubs(); }
+    else { toast('خطا در ریست مصرف', 'err'); }
+  }catch(e){ toast('خطا در ارتباط با سرور', 'err'); }
 }
 
 async function openSubModal(sid=''){
@@ -1282,6 +1292,10 @@ function renderLinks(links){
     return;
   }
   el.innerHTML=links.map(l=>{
+    const pct = l.limit_bytes === 0 ? 0 : Math.min(100, ((l.used_bytes || 0) / l.limit_bytes) * 100);
+    const bc = pct > 90 ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
+    const usedFmt = fmtB(l.used_bytes || 0);
+    const limitFmt = l.limit_bytes === 0 ? '∞' : fmtB(l.limit_bytes);
     return `
       <div class="sub-card">
         <div class="sub-head">
@@ -1294,11 +1308,16 @@ function renderLinks(links){
             </div>
           </div>
           <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-g" onclick="resetLinkUsage('${l.uuid}')" title="صفر کردن مصرف"><i class="ti ti-rotate"></i> ریست مصرف</button>
             <button class="btn btn-sm btn-g" onclick="openLinkModal('${l.uuid}')"><i class="ti ti-edit"></i> ویرایش</button>
             <button class="btn btn-sm btn-g" onclick="navigator.clipboard.writeText('${esc(l.vless_link)}').then(()=>toast('لینک VLESS کپی شد ✓','ok'))"><i class="ti ti-copy"></i> کپی لینک</button>
             <button class="btn btn-sm btn-g" onclick="showQR('${esc(l.label)}', '${esc(l.vless_link)}')"><i class="ti ti-qrcode"></i> QR</button>
             <button class="btn btn-sm btn-d" onclick="deleteLink('${l.uuid}')"><i class="ti ti-trash"></i></button>
           </div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="ubar"><div class="ubar-f" style="width:${pct}%;background:${bc}"></div></div>
+          <div class="utxt"><span>مصرف: ${usedFmt}</span><span>سهمیه: ${limitFmt}</span></div>
         </div>
         <div class="sub-links-box" style="margin-top:8px;font-size:10px">
           ${esc(l.vless_link)}
@@ -1306,6 +1325,15 @@ function renderLinks(links){
       </div>
     `;
   }).join('');
+}
+
+async function resetLinkUsage(uid){
+  if(!confirm('آیا از صفر کردن ترافیک مصرفی این کانفیگ اطمینان دارید؟')) return;
+  try{
+    const r = await fetch('/api/links/' + uid + '/reset_usage', {method:'POST'});
+    if(r.ok){ toast('مصرف کانفیگ ریست شد ✓', 'ok'); loadLinks(); }
+    else { toast('خطا در ریست مصرف', 'err'); }
+  }catch(e){ toast('خطا در ارتباط با سرور', 'err'); }
 }
 
 // Protocol selector with rules enforcement

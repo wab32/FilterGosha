@@ -157,6 +157,8 @@ async def handle_socks5_ws(ws: WebSocket, uid: str):
         error_logs.append({"time": datetime.now().isoformat(), "msg": f"SOCKS5 WS error: {e}"})
     finally:
         connections.pop(conn_id, None)
+        from main import save_state
+        asyncio.create_task(save_state())
 
 
 async def relay_tcp_to_tcp(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, conn_id: str, uid: str):
@@ -316,6 +318,8 @@ async def handle_socks5_tcp(client_reader: asyncio.StreamReader, client_writer: 
         error_logs.append({"time": datetime.now().isoformat(), "msg": f"SOCKS5 TCP error: {e}"})
     finally:
         connections.pop(conn_id, None)
+        from main import save_state
+        asyncio.create_task(save_state())
         try:
             client_writer.close()
             await client_writer.wait_closed()
