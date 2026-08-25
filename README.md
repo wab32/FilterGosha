@@ -1,140 +1,311 @@
-# 📖 دفترچه راهنمای کار با فیلترگشا (FilterGosha)
-
 <div align="center">
 
-![Version](https://img.shields.io/badge/FilterGosha-v1.3.3-10b981?style=for-the-badge&logo=fastapi&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-Lifespan_Core-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Telegram](https://img.shields.io/badge/Telegram-@FilterGosha-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
+# فیلترگشا · FilterGosha
+
+**پنل مدیریت اشتراک و کانفیگ، با تمرکز روی پایداری در شبکه‌ی ایران**
+
+فورک‌شده از پروژه‌ی [X4G](https://www.youtube.com/@X4GHUB)
+
+[![Version](https://img.shields.io/badge/version-1.4.13-10b981?style=flat-square)](#-تاریخ-نسخهها)
+[![Telegram](https://img.shields.io/badge/telegram-@FilterGosha-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/FilterGosha)
+[![License](https://img.shields.io/badge/license-open%20source-6b7280?style=flat-square)](#)
 
 </div>
 
+> ### 💖 حمایت از پروژه
+> این پروژه رایگان و متن‌باز است. اگر برایتان مفید بود، با یک ⭐ یا حمایت مالی به ادامه‌ی توسعه‌اش کمک کنید:
+>
+> | شبکه | آدرس کیف پول |
+> | :--- | :--- |
+> | **USDT · BEP20** | `0xd593ae9D32bEA690EC62460C54BF3951aFFF7803` |
+> | **USDT · TRC20** | `THaaHzoTwXfUfcrtYTDXRsMmk9qhnXa56M` |
+
 ---
 
-## 🚀 ۱. راه‌اندازی سریع سرور
+## فهرست
 
-### روش پیشنهادی: استقرار روی Railway
-1. مخزن را در گیت‌هاب خود **Fork** کنید.
-2. در سایت [Railway.app](https://railway.app) روی **New Project → Deploy from GitHub repo** کلیک کرده و مخزن خود را انتخاب کنید.
-3. در تنظیمات سرویس، از بخش **Volumes** یک مسیر ماندگار به آدرس `/data` ایجاد و متصل کنید (ضروری برای ذخیره همیشگی دیتابیس).
-4. در بخش **Networking** یک Public Domain به برنامه اختصاص دهید.
+- [این پنل چه کاری برای شما می‌کند؟](#-این-پنل-چه-کاری-برای-شما-میکند)
+- [شروع به کار](#-شروع-به-کار)
+- [ورود به پنل](#-ورود-به-پنل)
+- [کارهای روزمره](#-کارهای-روزمره)
+- [تنظیمات](#-تنظیمات)
+- [پرسش‌های پرتکرار](#-پرسشهای-پرتکرار)
+- [تاریخ نسخه‌ها](#-تاریخ-نسخهها)
+- [پشتیبانی](#-پشتیبانی)
 
-### روش Docker
+---
+
+## ✨ این پنل چه کاری برای شما می‌کند؟
+
+<table>
+<tr><td width="34%">
+
+**🧩 پنج نوع کانفیگ**
+
+</td><td>
+
+WebSocket، gRPC، XHTTP، SOCKS5 و کاستوم — هر کدام را با پورت، SNI، فینگرپرینت و ALPN دلخواه بسازید.
+
+</td></tr>
+<tr><td>
+
+**🛡️ ابزارهای ضدفیلتر**
+
+</td><td>
+
+Fragment، آی‌پی تمیز، فینگرپرینت مرورگر و اسکریپت آماده‌ی Cloudflare Worker / Pages برای عبور از اختلال اپراتورها.
+
+</td></tr>
+<tr><td>
+
+**👥 اشتراک چندکانفیگی**
+
+</td><td>
+
+هر اشتراک می‌تواند چند کانفیگ داشته باشد و هر کانفیگ بین چند اشتراک مشترک باشد.
+
+</td></tr>
+<tr><td>
+
+**📊 محدودیت‌های دقیق**
+
+</td><td>
+
+سقف حجم، تاریخ انقضا با تقویم شمسی، محدودیت تعداد آی‌پی همزمان و محدودیت سرعت — روی اشتراک یا روی تک‌کانفیگ.
+
+</td></tr>
+<tr><td>
+
+**📡 آمار زنده**
+
+</td><td>
+
+تعداد کاربران واقعی متصل، مصرف لحظه‌ای، نمودار ترافیک، لاگ فعالیت‌ها و فهرست خطاها.
+
+</td></tr>
+<tr><td>
+
+**🔗 صفحه‌ی اشتراک کاربر**
+
+</td><td>
+
+یک لینک برای کاربر: هم در کلاینت‌ها به‌عنوان ساب کار می‌کند، هم در مرورگر صفحه‌ی فارسی حجم/انقضا/QR را نشان می‌دهد.
+
+</td></tr>
+<tr><td>
+
+**⚙️ مدیریت گروهی**
+
+</td><td>
+
+انتخاب چندتایی اشتراک‌ها و کانفیگ‌ها و حذف گروهی آن‌ها، ریست مصرف و تغییر ریمارک با چند کلیک.
+
+</td></tr>
+<tr><td>
+
+**💾 بک‌آپ گزینشی**
+
+</td><td>
+
+انتخاب کنید چه چیزی بک‌آپ گرفته شود (کانفیگ‌ها، اشتراک‌ها، تنظیمات، رمز، آمار مصرف) و فایل را در هر پنل دیگری بازیابی کنید.
+
+</td></tr>
+</table>
+
+---
+
+## 🚀 شروع به کار
+
+<details open>
+<summary><b>گزینه ۱ — Railway (ساده‌ترین راه)</b></summary>
+
+1. این مخزن را **Fork** کنید.
+2. در [Railway.app](https://railway.app) مسیر **New Project → Deploy from GitHub repo** را برید و مخزن خود را انتخاب کنید.
+3. از تب **Volumes** یک والیوم روی مسیر `/data` بسازید. ← این مرحله را رد نکنید، وگرنه با هر دیپلوی داده‌ها پاک می‌شوند.
+4. از تب **Networking** یک Public Domain بگیرید.
+5. آدرس `https://your-domain.up.railway.app/login` را باز کنید.
+
+</details>
+
+<details>
+<summary><b>گزینه ۲ — داکر</b></summary>
+
 ```bash
-docker run -d \
-  --name filtergosha \
-  -p 9890:9890 \
-  -p 1080:1080 \
+docker build -t filtergosha .
+
+docker run -d --name filtergosha \
+  -p 9890:9890 -p 1080:1080 \
   -v $(pwd)/data:/data \
-  -e ADMIN_PASSWORD="YourPassword" \
+  -e ADMIN_PASSWORD="YourStrongPassword" \
   --restart unless-stopped \
-  $(docker build -q .)
+  filtergosha
 ```
 
-### روش اجرای مستقیم با پایتون
+</details>
+
+<details>
+<summary><b>گزینه ۳ — اجرای مستقیم</b></summary>
+
 ```bash
 pip install -r requirements.txt
 python -m uvicorn main:app --host 0.0.0.0 --port 9890
 ```
 
----
-
-## 🔑 ۲. اطلاعات و ورود به پنل
-
-- **آدرس ورود:** `https://your-domain.com/login` یا `http://SERVER_IP:9890/login`
-- **رمز عبور پیش‌فرض:** `FilterGoshaKING`
+</details>
 
 ---
 
-## 🛠️ ۳. راهنمای ساخت کانفیگ‌ها (نودها)
+## 🔑 ورود به پنل
 
-از منوی «کانفیگ‌ها» روی **«کانفیگ جدید»** کلیک کرده و پروتکل مورد نظر را انتخاب نمایید:
+| | |
+| :--- | :--- |
+| آدرس پنل | `https://your-domain.com/login` |
+| رمز پیش‌فرض | `FilterGoshaKING` |
 
-| نوع کانفیگ | کاربرد اصلی | تنظیمات شبکه |
+**اولین کاری که باید بکنید:** از مسیر «تنظیمات → تغییر رمز عبور» رمز پیش‌فرض را عوض کنید.
+
+---
+
+## 📘 کارهای روزمره
+
+### ساخت کانفیگ
+
+از منوی **کانفیگ‌ها → کانفیگ جدید**، نوع کانفیگ را انتخاب کنید:
+
+| نوع | مناسب برای |
+| :--- | :--- |
+| **WebSocket** | عبور از Cloudflare Worker؛ سازگارترین گزینه با اکثر کلاینت‌ها |
+| **gRPC** | پینگ پایین و اتصال پایدار روی HTTP/2 |
+| **XHTTP** | مقاوم‌ترین حالت در زمان اختلال شدید شبکه |
+| **SOCKS5** | تلگرام، کنسول بازی، ویندوز و نرم‌افزارهایی که ساب نمی‌خوانند |
+| **کاستوم** | افزودن لینک یا پروکسی آماده‌ی سرویس‌های دیگر به اشتراک‌ها |
+
+### ساخت اشتراک برای کاربر
+
+1. **اشتراک‌ها → اشتراک جدید** را بزنید.
+2. نام، حجم، مدت اعتبار، سقف آی‌پی همزمان و سقف سرعت را وارد کنید.
+3. کانفیگ‌هایی که باید داخل این اشتراک باشند را تیک بزنید.
+4. لینک ساب را کپی و برای کاربر ارسال کنید.
+
+کاربر همان یک لینک را:
+- در **v2rayNG / Hiddify / Sing-Box / NekoBox / Shadowrocket** به‌عنوان Subscription اضافه می‌کند،
+- یا در **مرورگر** باز می‌کند و حجم باقی‌مانده، تاریخ انقضا، نام‌کاربری SOCKS5 و QR هر کانفیگ را می‌بیند.
+
+### بک‌آپ و انتقال
+
+از **تنظیمات → بک‌آپ و بازیابی**، تیک بخش‌های موردنظر را بزنید و فایل `.db` را دانلود کنید. همان فایل را می‌توانید در پنل دیگری آپلود کنید؛ پنل قبل از بازیابی محتوای فایل و موارد تکراری را نشان می‌دهد و می‌پرسد که جایگزین شوند یا رد شوند.
+
+---
+
+## ⚙️ تنظیمات
+
+متغیرهای محیطی (همه اختیاری، جز رمز که بهتر است تنظیم شود):
+
+| متغیر | کاربرد | پیش‌فرض |
 | :--- | :--- | :--- |
-| **WebSocket** | بهترین گزینه برای عبور از ورکر کلادفلر | پشتیبانی از uTLS، Fragment و Clean IP |
-| **gRPC** | پینگ بسیار پایین با مالتی‌پلکسینگ HTTP/2 | پورت 443 و ALPN پیش‌فرض `h2` |
-| **XHTTP** | متد جدید Xray (انشعاب خودکار پکت) | پایدار در برابر فیلترینگ شدید |
-| **SOCKS5** | اتصال مستقیم تلگرام، کنسول، ویندوز و نرم‌افزارها | پورت TCP مستقل (1080) با نام‌کاربری ۶ رقمی |
-| **کاستوم** | تعریف پروکسی‌های خارجی یا لینک‌های اختصاصی | پشتیبانی از متغیرهای `{host}` و `{username}` |
+| `ADMIN_PASSWORD` | رمز ورود به پنل | `FilterGoshaKING` |
+| `DATA_DIR` | محل نگه‌داری داده‌ها | `/data` |
+| `WORKER_DOMAIN` | دامنه‌ی Cloudflare Worker | خالی |
+| `CLEAN_IP` | آی‌پی تمیز پیش‌فرض کانفیگ‌ها | خالی |
+| `REMARK_PREFIX` | پیشوند نام کانفیگ‌ها در کلاینت | `FilterGosha` |
+
+همین موارد از داخل صفحه‌ی **تنظیمات** پنل هم قابل تغییرند و نیازی به ری‌استارت ندارند.
 
 ---
 
-## 👥 ۴. راهنمای مدیریت اشتراک‌ها (ساب‌ها)
+## ❓ پرسش‌های پرتکرار
 
-1. به بخش **«اشتراک‌ها»** بروید و روی **«اشتراک جدید»** کلیک کنید.
-2. نام، حجم مجاز (GB)، تعداد روز اعتبار، محدودیت تعداد آی‌پی و سرعت (Mbps) را مشخص کنید.
-3. تیک کانفیگ‌هایی که مایلید به این اشتراک متصل باشند را فعال کرده و ذخیره نمایید.
-4. **لینک ساب اختصاصی (`/sub/{id}`):**
-   - **برای کلاینت‌ها (v2rayNG, Sing-Box, Hiddify, NekoBox, Shadowrocket):** کپی کردن لینک ساب و الصاق مستقیم در برنامه.
-   - **برای کاربر:** ارسال لینک ساب به کاربر برای باز کردن در مرورگر و مشاهده‌ی حجم باقی‌مانده، وضعیت مصرف، تاریخ انقضا و نام‌کاربری اختصاصی SOCKS5.
+<details>
+<summary>رمز پنل را فراموش کردم.</summary>
 
----
+متغیر محیطی `ADMIN_PASSWORD` را روی مقدار جدید بگذارید و سرویس را ری‌استارت کنید.
 
-## ⚙️ ۵. متغیرهای محیطی (Environment Variables)
+</details>
 
-| نام متغیر | کاربرد | مقدار پیش‌فرض |
-| :--- | :--- | :--- |
-| `ADMIN_PASSWORD` | تغییر کلمه عبور ورود به پنل | `FilterGoshaKING` |
-| `DATA_DIR` | مسیر فایل دیتابیس SQLite | `/data` |
-| `WORKER_DOMAIN` | آدرس دامنه کلادفلر ورکر | *(خالی)* |
-| `CLEAN_IP` | آی‌پی تمیز پیش‌فرض کلاینت‌ها | *(خالی)* |
-| `REMARK_PREFIX` | پیشوند متنی اول نام لینک‌ها | `FilterGosha` |
+<details>
+<summary>بعد از دیپلوی جدید، کانفیگ‌ها پاک شدند.</summary>
 
----
+والیوم روی مسیر `/data` وصل نیست. آن را بسازید و آخرین فایل بک‌آپ را از صفحه‌ی تنظیمات بازیابی کنید.
 
-## 💖 ۶. حمایت مالی (Donation)
+</details>
 
-توسعه و نگهداری این پروژه به صورت کاملاً متن‌باز انجام می‌شود. در صورت تمایل می‌توانید از طریق آدرس‌های رمزارز زیر از پروژه حمایت کنید:
+<details>
+<summary>عدد «اتصالات فعال» با تعداد کاربرانم نمی‌خواند.</summary>
 
-- **USDT (BEP20):**  
-  `0xd593ae9D32bEA690EC62460C54BF3951aFFF7803`
+از نسخه‌ی 1.4.10 این عدد تعداد **کاربران واقعی** است، نه تعداد استریم‌های باز. اگر عدد بزرگی می‌بینید، پنل را به آخرین نسخه برسانید.
 
-- **USDT (TRC20):**  
-  `THaaHzoTwXfUfcrtYTDXRsMmk9qhnXa56M`
+</details>
 
----
+<details>
+<summary>کاربر می‌گوید ساب باز نمی‌شود.</summary>
 
-## 📢 پشتیبانی و ارتباط
+یک بار لینک ساب را در مرورگر خودتان باز کنید؛ اگر صفحه بالا آمد مشکل از سمت کلاینت کاربر است. اگر بالا نیامد، وضعیت اشتراک (فعال بودن، انقضا و باقی‌مانده‌ی حجم) را بررسی کنید.
 
-- **کانال رسمی تلگرام:** [@FilterGosha](https://t.me/FilterGosha)
-- **گزارش مشکلات:** [GitHub Issues](https://github.com/thekourox/FilterGosha/issues)
+</details>
+
+<details>
+<summary>کانفیگ در ایرانسل/رایتل قطع می‌شود.</summary>
+
+اسکریپت Cloudflare Worker یا Pages را از صفحه‌ی تنظیمات کپی و دیپلوی کنید، دامنه‌ی آن را در همان صفحه ثبت کنید و یک کانفیگ WebSocket بسازید. در صورت نیاز Fragment را روی کانفیگ فعال کنید.
+
+</details>
 
 ---
 
-## 📜 Version Changelog (Release History)
+## 📜 تاریخ نسخه‌ها
 
-### 🔹 v1.3.3 (Current Release)
-- **Feature:** Introduced native direct TCP SOCKS5 server with 6-character short username authentication.
-- **Feature:** Added dedicated SOCKS5 protocol selector cards in the admin dashboard.
-- **UI/UX:** Automated form clean-up for SOCKS5 by auto-hiding redundant TLS/Fragment anti-filtering fields.
-- **UI/UX:** Added short SOCKS5 username display box on client subscription web pages.
-- **Fix:** Fixed protocol validation falling back to `vless-grpc` upon saving SOCKS5 configurations.
+### `1.4.13` — نسخه‌ی فعلی
+- بک‌آپ گزینشی: با چک‌لیست انتخاب کنید کانفیگ‌ها، اشتراک‌ها، تنظیمات، رمز عبور و آمار مصرف کدام‌ها داخل فایل بک‌آپ بروند.
+- فایل بک‌آپ فقط شامل موارد انتخاب‌شده است و در پنل‌های دیگر بدون خطا بازیابی می‌شود.
+- پیش از بازیابی، محتوای فایل و تعداد موارد تکراری نمایش داده می‌شود و برای بازنویسی رمز عبور جداگانه تأیید گرفته می‌شود.
 
-### 🔹 v1.3.2
-- **Fix:** Resolved Windows SQLite file locking `PermissionError (WinError 32)` during database import/restore operations.
-- **Refactor:** Standardized database connection lifecycle with explicit connection cleanup handlers.
+### `1.4.11`
+- دکمه‌ی «صفحه گیت‌هاب پروژه» با نور و رنگ متحرک در طیف سفید.
+- نام فایل‌های داده به `filterGosha` تغییر کرد؛ نصب‌های قبلی به‌صورت خودکار و بدون از دست رفتن داده منتقل می‌شوند.
 
-### 🔹 v1.3.1
-- **Refactor:** Upgraded FastAPI core event handlers from deprecated `@app.on_event` to modern Lifespan async context managers.
-- **Fix:** Resolved circular import dependencies across relay modules (`relay_vless`, `relay_grpc`, `relay_socks5`, `xhttp_siz10`).
+### `1.4.10`
+- رفع اشکال شمارش «اتصالات فعال» که عددهای غیرواقعی (مثلاً ۷۲ اتصال برای یک کاربر) نشان می‌داد.
+- عدد کاربران متصل در داشبورد، صفحه‌ی اشتراک کاربر و ردیف تک‌تک کانفیگ‌ها یکسان و درست شد.
+- شمارش برای کاربرانی که با آی‌پی تمیز یا Cloudflare Worker وصل می‌شوند هم اصلاح شد.
 
-### 🔹 v1.3.0
-- **Architecture:** Complete transition to a Many-to-Many subscription model (multiple nodes connected to multiple user subscriptions).
-- **Database:** Migrated persistent storage engine to SQLite (`x4g_state.db`) with automated default seeding.
-- **Feature:** Added automated database backup export and conflict-checking import endpoints.
+### `1.4.6`
+- انتخاب چندتایی و حذف گروهی اشتراک‌ها و کانفیگ‌ها.
+- نمایش هشدار پیش از حذف و گزارش تعداد موارد حذف‌شده.
 
-### 🔹 v1.2.4
-- **Feature:** Added native XHTTP (Auto / Split-HTTP) transport support for high-resilience CDN bypass.
-- **Feature:** Integrated uTLS fingerprinting profiles (`chrome`, `firefox`, `safari`, `ios`, `android`, `edge`, `random`).
-- **Feature:** Added custom ALPN negotiations (`h2`, `http/1.1`).
+### `1.4.3`
+- ثبت تاریخ انقضا با تقویم شمسی و انتخابگر تاریخ در فرم اشتراک و کانفیگ.
+- نگه‌داری دائمی آمار مصرف و افزودن دکمه‌ی ریست مصرف.
 
-### 🔹 v1.2.0
-- **Feature:** Implemented TLS ClientHello Fragment (Anti-DPI) engine with customizable packet splitting modes (`tlshello`, `1-3`, `1-5`).
-- **Feature:** Added real-time IP limiter per node/subscription with automatic active connection eviction.
-- **Feature:** Added bandwidth throttling (speed limit in Mbps) per user.
+### `1.4.0`
+- ذخیره‌سازی دائمی داده‌ها با پایداری بیشتر و بدون قطعی هنگام ری‌استارت.
+- رفع اشکال ناپدید شدن کانفیگ حذف‌شده از اشتراک‌های مرتبط.
 
-### 🔹 v1.0.0 (Initial Core Release)
-- **Core:** Initial release featuring VLESS over WebSocket and VLESS over gRPC.
-- **UI:** Responsive dark glassmorphism web management dashboard with live traffic metrics and activity logs.
-- **Subscription:** Smart dual-purpose subscription endpoints supporting both web dashboards and client base64 feeds.
+### `1.3.3`
+- سرور SOCKS5 مستقل با نام‌کاربری کوتاه ۶ کاراکتری.
+- نمایش نام‌کاربری SOCKS5 در صفحه‌ی اشتراک کاربر و ساده‌سازی فرم ساخت این نوع کانفیگ.
+
+### `1.3.0`
+- معماری چند-به-چند: چند کانفیگ در یک اشتراک و اشتراک‌گذاری یک کانفیگ بین چند اشتراک.
+- افزودن دانلود بک‌آپ و بازیابی آن با بررسی موارد تکراری.
+
+### `1.2.4`
+- افزودن XHTTP، فینگرپرینت مرورگر (Chrome/Firefox/Safari/iOS/Android/Edge) و انتخاب ALPN.
+
+### `1.2.0`
+- Fragment ضد DPI، محدودیت تعداد آی‌پی همزمان و محدودیت سرعت برای هر کاربر.
+
+### `1.0.0`
+- انتشار اولیه: VLESS روی WebSocket و gRPC، داشبورد فارسی با آمار زنده و لینک ساب دومنظوره (کلاینت + مرورگر).
+
+---
+
+## 📢 پشتیبانی
+
+- کانال تلگرام: [@FilterGosha](https://t.me/FilterGosha)
+- گزارش باگ و درخواست قابلیت: [GitHub Issues](https://github.com/thekourox/FilterGosha/issues)
+
+<div align="center">
+
+اگر این پروژه به کارتان آمد، یک ⭐ روی مخزن بزنید.
+
+</div>

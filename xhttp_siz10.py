@@ -26,6 +26,11 @@ router = APIRouter()
 XHTTP_BUF = 512 * 1024
 DOWNLINK_QUEUE_MAX = 512
 SESSION_IDLE_TIMEOUT = 30
+# سشن‌هایی که تونل TCP باز دارند نباید برای همیشه زنده بمانند: اگر کلاینت ناپدید شود
+# (بدون بسته‌شدن تمیز)، سشن و رکورد اتصالِ متناظرش انبار می‌شد و شمارش «اتصالات
+# زنده» بی‌دلیل بالا می‌رفت. last_seen با هر ترافیک واقعی کلاینت تازه می‌شود، پس
+# این سقف فقط سشن‌های واقعاً مرده را جمع می‌کند.
+SESSION_OPEN_IDLE_TIMEOUT = 180
 REAPER_INTERVAL = 10
 TCP_CONNECT_TIMEOUT = 10.0
 
@@ -268,8 +273,10 @@ async def _reaper():
         await asyncio.sleep(REAPER_INTERVAL)
         now = time.time()
         async with XHTTP_LOCK:
-            stale = [sid for sid, s in xhttp_sessions.items()
-                     if now - s["last_seen"] > SESSION_IDLE_TIMEOUT and not s.get("tcp_open")]
+            stale = [
+                sid for sid, s in xhttp_sessions.items()
+                if now - s["last_seen"] > (SESSION_OPEN_IDLE_TIMEOUT if s.get("tcp_open") else SESSION_IDLE_TIMEOUT)
+            ]
         for sid in stale:
             await _teardown(sid)
 
@@ -299,6 +306,8 @@ async def _pump_tcp_to_queue(session_id: str, uuid: str, reader: asyncio.StreamR
             async with XHTTP_LOCK:
                 sess = xhttp_sessions.get(session_id)
             if sess:
+                # ترافیک واقعی مقصد→کلاینت هم نشانه‌ی زنده‌بودن سشن است
+                sess["last_seen"] = time.time()
                 c = connections.get(sess["conn_id"])
                 if c:
                     c["bytes"] += len(data)

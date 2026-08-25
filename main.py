@@ -29,6 +29,7 @@ logger = logging.getLogger("FilterGosha")
 from contextlib import asynccontextmanager
 
 IRAN_TZ = ZoneInfo("Asia/Tehran")
+PANEL_VERSION = "1.4.13"
 
 async def _periodic_state_saver():
     while True:
@@ -56,7 +57,7 @@ async def lifespan(app: FastAPI):
     save_task = asyncio.create_task(_periodic_state_saver())
     
     log_activity("system", "سرور راه‌اندازی شد", "ok")
-    logger.info(f"FilterGosha Panel v1.3.3 started on port {CONFIG['port']}")
+    logger.info(f"FilterGosha Panel v{PANEL_VERSION} started on port {CONFIG['port']}")
     yield
     
     save_task.cancel()
@@ -77,13 +78,79 @@ def resolve_data_dir() -> Path:
     return Path("./data")
 
 DATA_DIR = resolve_data_dir()
-DATA_FILE = DATA_DIR / "x4g_state.json"
-DATA_DB = DATA_DIR / "x4g_state.db"
-SECRET_FILE = DATA_DIR / "x4g_secret.key"
+DATA_FILE = DATA_DIR / "filterGosha.json"
+DATA_DB = DATA_DIR / "filterGosha.db"
+SECRET_FILE = DATA_DIR / "filterGosha.key"
 SAVE_LOCK = asyncio.Lock()
+
+# نام‌های قدیمی فایل‌های /data (نسخه‌های پیش از تغییر نام پروژه). این‌ها فقط برای
+# مهاجرت خودکار نگه داشته شده‌اند تا نصب‌های موجود با آپدیت، داده‌هایشان را از دست ندهند.
+LEGACY_DB_NAMES = ("x4g_state.db",)
+LEGACY_JSON_NAMES = ("x4g_state.json",)
+LEGACY_SECRET_NAMES = ("x4g_secret.key",)
+SQLITE_SIDECAR_SUFFIXES = ("-wal", "-shm", "-journal")
+
+def _checkpoint_and_close(db_path: Path) -> None:
+    """WAL را داخل فایل اصلی ادغام می‌کند تا جابه‌جایی فایل، داده‌ای جا نگذارد."""
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+    finally:
+        conn.close()
+
+def migrate_legacy_data_files() -> None:
+    """فایل‌های /data با نام قدیمی را به نام جدید (filterGosha.*) منتقل می‌کند.
+    اگر فایل با نام جدید از قبل موجود باشد، هیچ چیزی بازنویسی نمی‌شود."""
+    try:
+        if not DATA_DIR.exists():
+            return
+
+        # دیتابیس: قبل از انتقال، WAL چک‌پوینت می‌شود و سایدکارهای بی‌مصرف پاک می‌شوند
+        if not DATA_DB.exists():
+            for name in LEGACY_DB_NAMES:
+                legacy_db = DATA_DIR / name
+                if not legacy_db.exists():
+                    continue
+                try:
+                    _checkpoint_and_close(legacy_db)
+                except Exception as e:
+                    logger.warning(f"WAL checkpoint on legacy DB failed: {e}")
+                os.replace(legacy_db, DATA_DB)
+                for suffix in SQLITE_SIDECAR_SUFFIXES:
+                    sidecar = DATA_DIR / f"{name}{suffix}"
+                    try:
+                        if sidecar.exists():
+                            sidecar.unlink()
+                    except Exception as e:
+                        logger.warning(f"Could not remove stale {sidecar.name}: {e}")
+                logger.info(f"Renamed legacy database {name} -> {DATA_DB.name}")
+                break
+
+        # کلید امضای سشن‌ها: با انتقال آن، کاربران لاگین‌شده و رمز فعلی معتبر می‌مانند
+        if not SECRET_FILE.exists():
+            for name in LEGACY_SECRET_NAMES:
+                legacy_secret = DATA_DIR / name
+                if legacy_secret.exists():
+                    os.replace(legacy_secret, SECRET_FILE)
+                    logger.info(f"Renamed legacy secret {name} -> {SECRET_FILE.name}")
+                    break
+
+        # JSON قدیمی (و بکاپ .bak آن) فقط برای مهاجرت داده‌های نسخه‌های خیلی قدیمی
+        for name in LEGACY_JSON_NAMES:
+            legacy_json = DATA_DIR / name
+            if legacy_json.exists() and not DATA_FILE.exists():
+                os.replace(legacy_json, DATA_FILE)
+                logger.info(f"Renamed legacy state file {name} -> {DATA_FILE.name}")
+            legacy_bak = DATA_DIR / f"{name}.bak"
+            new_bak = DATA_FILE.with_suffix(".json.bak")
+            if legacy_bak.exists() and not new_bak.exists():
+                os.replace(legacy_bak, new_bak)
+    except Exception as e:
+        logger.warning(f"Legacy data file migration skipped: {e}")
 
 def init_db():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    migrate_legacy_data_files()
     with sqlite3.connect(DATA_DB) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
@@ -97,6 +164,9 @@ def _load_or_create_secret() -> str:
         return env_secret
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
+        # قبل از هر چیز نام‌های قدیمی به نام جدید منتقل می‌شوند؛ در غیر این صورت
+        # کلید تازه ساخته می‌شد و هش رمز ادمینِ ذخیره‌شده در دیتابیس بی‌اعتبار می‌ماند.
+        migrate_legacy_data_files()
         if SECRET_FILE.exists():
             existing = SECRET_FILE.read_text(encoding="utf-8").strip()
             if existing:
@@ -348,7 +418,7 @@ def log_activity(kind: str, message: str, level: str = "info"):
     })
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-SESSION_COOKIE = "x4g_session"
+SESSION_COOKIE = "filtergosha_session"
 SESSION_TTL = 60 * 60 * 24 * 365
 
 def hash_password(pw: str) -> str:
@@ -774,15 +844,78 @@ def extract_client_ip(headers: dict | None, socket_host: str | None = None) -> s
         return "Cloudflare-CDN"
     return "نامشخص"
 
+UNKNOWN_IP = "نامشخص"
+
 def unique_ips_for_uuid(uuid: str) -> set:
-    return {c.get("ip") for c in list(connections.values()) if c.get("uuid") == uuid and c.get("ip") and c.get("ip") != "نامشخص"}
+    """آی‌پی‌های یکتای شناسایی‌شده برای یک شناسه — مبنای اعمال محدودیت تعداد آی‌پی.
+    آی‌پی نامشخص در اینجا حساب نمی‌شود تا کاربری به‌اشتباه بلاک نشود."""
+    return {c.get("ip") for c in list(connections.values()) if c.get("uuid") == uuid and c.get("ip") and c.get("ip") != UNKNOWN_IP}
+
+def _transport_matches_protocol(transport: str, protocol: str) -> bool:
+    """آیا ترابرد یک اتصال زنده متعلق به کانفیگی با این پروتکل است؟
+    در معماری چند-به-چند، شناسه‌ی کلاینت برابر sub_id است؛ پس تنها راه نسبت‌دادن
+    یک اتصال به یک کانفیگ مشخص، تطبیق ترابرد آن است."""
+    t = (transport or "").strip().lower()
+    p = (protocol or "").strip().lower()
+    if not t or not p:
+        return False
+    if t == p:
+        return True
+    if p in ("socks5", "socks", "custom"):
+        return "socks" in t
+    if p == "xhttp":
+        return "xhttp" in t
+    if p == "vless-ws":
+        # "socks5-ws" هم شامل ws است، پس باید صریحاً کنار گذاشته شود
+        return "ws" in t and "socks" not in t
+    if p == "vless-grpc":
+        return "grpc" in t
+    return False
+
+def _conn_transport(c: dict) -> str:
+    return c.get("transport") or c.get("type") or ""
+
+def active_ips_for_sub(sub_id: str, sub: dict | None = None) -> set:
+    """آی‌پی یکتای کاربران زنده‌ی یک اشتراک.
+    هر کاربر ممکن است ده‌ها استریم موازی باز کند (WS/XHTTP/gRPC هرکدام یک استریم
+    به‌ازای هر اتصال مقصد می‌سازند)؛ پس شمارش استریم‌ها عدد غیرواقعی می‌دهد و
+    مبنای شمارش باید آی‌پی یکتا باشد."""
+    if sub is None:
+        sub = SUBS.get(sub_id)
+    link_ids = set(sub.get("links") or []) if sub else set()
+    ips = set()
+    for c in list(connections.values()):
+        cu = c.get("uuid")
+        if cu == sub_id or (cu is not None and cu in link_ids):
+            ips.add(c.get("ip") or UNKNOWN_IP)
+    return ips
+
+def active_ips_for_link(link_uuid: str, link: dict | None = None, subs_snapshot: dict | None = None) -> set:
+    """آی‌پی یکتای کاربران زنده‌ی یک کانفیگ مشخص."""
+    if link is None:
+        link = LINKS.get(link_uuid)
+    protocol = (link or {}).get("protocol") or DEFAULT_PROTOCOL
+    subs_src = subs_snapshot if subs_snapshot is not None else SUBS
+    owner_subs = {sid for sid, s in subs_src.items() if link_uuid in (s.get("links") or [])}
+    ips = set()
+    for c in list(connections.values()):
+        cu = c.get("uuid")
+        if cu == link_uuid:
+            ips.add(c.get("ip") or UNKNOWN_IP)
+        elif cu in owner_subs and _transport_matches_protocol(_conn_transport(c), protocol):
+            ips.add(c.get("ip") or UNKNOWN_IP)
+    return ips
+
+def active_user_count() -> int:
+    """تعداد کاربران واقعی زنده در کل سرور = جفت‌های یکتای (شناسه، آی‌پی).
+    یک کاربر با ۵۰ استریم موازی فقط یک عدد شمرده می‌شود."""
+    return len({(c.get("uuid"), c.get("ip") or UNKNOWN_IP) for c in list(connections.values())})
 
 def unique_ips_for_sub(sub_id: str) -> set:
-    sub_links = {uid for uid, l in LINKS.items() if l.get("sub_id") == sub_id}
-    return {c.get("ip") for c in list(connections.values()) if c.get("uuid") in sub_links and c.get("ip") and c.get("ip") != "نامشخص"}
+    return active_ips_for_sub(sub_id)
 
 def is_ip_allowed(uid: str, ip: str) -> bool:
-    if not ip or ip == "نامشخص": return True
+    if not ip or ip == UNKNOWN_IP: return True
     sub = SUBS.get(uid)
     if sub:
         limit = int(sub.get("ip_limit", 0) or 0)
@@ -819,11 +952,11 @@ def client_ip(request: Request) -> str:
 # ── Basic endpoints ───────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
-    return {"service": "FilterGosha", "version": "1.3.3", "status": "active", "channel": "https://t.me/FilterGosha"}
+    return {"service": "FilterGosha", "version": PANEL_VERSION, "status": "active", "channel": "https://t.me/FilterGosha"}
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "connections": len(connections), "uptime": uptime()}
+    return {"status": "ok", "users": active_user_count(), "streams": len(connections), "connections": active_user_count(), "uptime": uptime()}
 
 # ── Subscription (Public Feed for V2ray / Sing-Box / Xray Clients) ───────────
 def is_browser_request(request: Request) -> bool:
@@ -998,98 +1131,312 @@ async def update_settings(request: Request, _=Depends(require_auth)):
     return {"ok": True, "settings": dict(SETTINGS)}
 
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 import os
 
-@app.get("/api/export_db")
-async def export_db(_=Depends(require_auth)):
-    await save_state()
+# ── Granular Backup / Restore ────────────────────────────────────────────────
+# اجزای قابل انتخاب برای بک‌آپ. فایل خروجی همیشه هر سه جدول اصلی
+# (links / subs / settings) را می‌سازد — حتی وقتی خالی هستند — تا هر پنل دیگری
+# بتواند بدون خطا آن را بخواند و بازیابی کند.
+BACKUP_COMPONENTS = ("links", "subs", "settings", "auth", "usage")
+BACKUP_DATA_COMPONENTS = ("links", "subs", "settings", "auth")
+BACKUP_FORMAT_VERSION = 1
+BACKUP_META_TABLE = "backup_meta"
+
+def parse_backup_components(raw: str | None, *, require_data: bool = True) -> set[str]:
+    """رشته‌ی «links,subs,...» را به مجموعه‌ی معتبر تبدیل می‌کند.
+    مقدار خالی یا نامشخص = همه‌ی اجزا (سازگاری با نسخه‌های قبلی که پارامتر نمی‌فرستادند)."""
+    if raw is None or not str(raw).strip():
+        return set(BACKUP_COMPONENTS)
+    items = {part.strip().lower() for part in str(raw).split(",") if part.strip()}
+    unknown = items - set(BACKUP_COMPONENTS)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"جزء نامعتبر برای بک‌آپ: {'، '.join(sorted(unknown))}")
+    if require_data and not (items & set(BACKUP_DATA_COMPONENTS)):
+        raise HTTPException(status_code=400, detail="حداقل یک بخش داده (کانفیگ، اشتراک، تنظیمات یا رمز) باید انتخاب شود")
+    return items
+
+def _without_usage(record: dict) -> dict:
+    """کپی رکورد با مصرف صفرشده — برای وقتی که ادمین آمار مصرف را انتخاب نکرده است."""
+    clean = dict(record)
+    clean["used_bytes"] = 0
+    return clean
+
+def build_backup_db(dest_path: str, components: set[str], snap_links: dict, snap_subs: dict,
+                    snap_settings: dict, password_hash: str) -> dict:
+    """یک فایل SQLite مستقل و کامل می‌سازد که فقط شامل اجزای انتخاب‌شده است.
+    ساختار جداول عیناً همان ساختار پنل است، پس خروجی بدون هیچ تبدیلی در پنل
+    مقصد قابل ایمپورت است."""
+    keep_usage = "usage" in components
+    links_out: dict[str, dict] = {}
+    if "links" in components:
+        for uid, link in snap_links.items():
+            links_out[uid] = dict(link) if keep_usage else _without_usage(link)
+
+    subs_out: dict[str, dict] = {}
+    if "subs" in components:
+        for sid, sub in snap_subs.items():
+            record = dict(sub) if keep_usage else _without_usage(sub)
+            # یکپارچگی ارجاعی: اشتراک نباید به کانفیگی اشاره کند که در فایل نیست
+            record["links"] = [uid for uid in (record.get("links") or []) if uid in links_out]
+            subs_out[sid] = record
+
+    settings_rows: list[tuple[str, str]] = []
+    if "settings" in components:
+        settings_rows.extend((k, json.dumps(v, ensure_ascii=False)) for k, v in snap_settings.items())
+    if "auth" in components:
+        settings_rows.append(("password_hash", password_hash))
+
+    conn = sqlite3.connect(dest_path)
     try:
-        with sqlite3.connect(DATA_DB) as conn:
-            conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+        conn.execute("CREATE TABLE IF NOT EXISTS links (uuid TEXT PRIMARY KEY, data TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS subs (sub_id TEXT PRIMARY KEY, data TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)")
+        conn.execute(f"CREATE TABLE IF NOT EXISTS {BACKUP_META_TABLE} (key TEXT PRIMARY KEY, value TEXT)")
+        conn.executemany("INSERT OR REPLACE INTO links (uuid, data) VALUES (?, ?)",
+                         [(k, json.dumps(v, ensure_ascii=False)) for k, v in links_out.items()])
+        conn.executemany("INSERT OR REPLACE INTO subs (sub_id, data) VALUES (?, ?)",
+                         [(k, json.dumps(v, ensure_ascii=False)) for k, v in subs_out.items()])
+        conn.executemany("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", settings_rows)
+        conn.executemany(f"INSERT OR REPLACE INTO {BACKUP_META_TABLE} (key, value) VALUES (?, ?)", [
+            ("panel", "FilterGosha"),
+            ("format_version", str(BACKUP_FORMAT_VERSION)),
+            ("created_at", datetime.now(IRAN_TZ).isoformat()),
+            ("components", ",".join(sorted(components))),
+            ("links_count", str(len(links_out))),
+            ("subs_count", str(len(subs_out))),
+        ])
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "components": sorted(components),
+        "links_count": len(links_out),
+        "subs_count": len(subs_out),
+        "settings_count": sum(1 for k, _ in settings_rows if k != "password_hash"),
+        "has_auth": "auth" in components,
+    }
+
+def _remove_temp_file(path: str) -> None:
+    try:
+        if path and os.path.exists(path):
+            os.remove(path)
     except Exception as e:
-        logger.warning(f"WAL checkpoint during export: {e}")
-    return FileResponse(DATA_DB, media_type="application/octet-stream", filename="filtergosha_backup.db")
+        logger.warning(f"Could not remove temp file {path}: {e}")
+
+def _table_exists(conn: sqlite3.Connection, name: str) -> bool:
+    row = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)).fetchone()
+    return row is not None
+
+def read_backup_db(path: str) -> dict:
+    """محتوای فایل بک‌آپ را می‌خواند. جدول‌های غایب نادیده گرفته می‌شوند تا هم
+    بک‌آپ‌های جزئی و هم بک‌آپ کامل نسخه‌های قدیمی‌تر پذیرفته شوند."""
+    conn = sqlite3.connect(path)
+    try:
+        links: dict[str, dict] = {}
+        subs: dict[str, dict] = {}
+        settings: dict[str, object] = {}
+        password_hash: str | None = None
+        meta: dict[str, str] = {}
+
+        if _table_exists(conn, "links"):
+            for uid, data in conn.execute("SELECT uuid, data FROM links"):
+                links[uid] = json.loads(data)
+        if _table_exists(conn, "subs"):
+            for sid, data in conn.execute("SELECT sub_id, data FROM subs"):
+                subs[sid] = json.loads(data)
+        if _table_exists(conn, "settings"):
+            for key, value in conn.execute("SELECT key, value FROM settings"):
+                if key == "password_hash":
+                    password_hash = value
+                    continue
+                try:
+                    settings[key] = json.loads(value)
+                except (TypeError, ValueError):
+                    settings[key] = value
+        if _table_exists(conn, BACKUP_META_TABLE):
+            for key, value in conn.execute(f"SELECT key, value FROM {BACKUP_META_TABLE}"):
+                meta[key] = value
+    except sqlite3.DatabaseError as e:
+        raise HTTPException(status_code=400, detail=f"فایل انتخاب‌شده یک دیتابیس SQLite معتبر نیست: {e}")
+    except (TypeError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"ساختار داده‌های فایل بک‌آپ معتبر نیست: {e}")
+    finally:
+        conn.close()
+
+    available = set()
+    if links:
+        available.add("links")
+    if subs:
+        available.add("subs")
+    if settings:
+        available.add("settings")
+    if password_hash:
+        available.add("auth")
+    if not available:
+        raise HTTPException(status_code=400, detail="این فایل بک‌آپ هیچ داده‌ی قابل بازیابی ندارد")
+
+    return {
+        "links": links,
+        "subs": subs,
+        "settings": settings,
+        "password_hash": password_hash,
+        "meta": meta,
+        "available": available,
+    }
+
+async def _upload_to_temp(file: UploadFile) -> str:
+    if not (file.filename or "").lower().endswith(".db"):
+        raise HTTPException(status_code=400, detail="فرمت فایل باید .db باشد")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        return tmp.name
+
+@app.get("/api/export_db")
+async def export_db(components: str | None = None, _=Depends(require_auth)):
+    selected = parse_backup_components(components)
+    await save_state()
+    async with LINKS_LOCK:
+        snap_links = {k: dict(v) for k, v in LINKS.items()}
+    async with SUBS_LOCK:
+        snap_subs = {k: dict(v) for k, v in SUBS.items()}
+    snap_settings = dict(SETTINGS)
+    password_hash = AUTH["password_hash"]
+
+    fd, tmp_path = tempfile.mkstemp(prefix="filtergosha_backup_", suffix=".db")
+    os.close(fd)
+    try:
+        summary = await asyncio.to_thread(
+            build_backup_db, tmp_path, selected, snap_links, snap_subs, snap_settings, password_hash
+        )
+    except HTTPException:
+        _remove_temp_file(tmp_path)
+        raise
+    except Exception as e:
+        _remove_temp_file(tmp_path)
+        logger.error(f"Export DB error: {e}")
+        raise HTTPException(status_code=500, detail=f"خطا در ساخت فایل بک‌آپ: {e}")
+
+    filename = f"filtergosha_backup_{datetime.now(IRAN_TZ).strftime('%Y%m%d_%H%M%S')}.db"
+    log_activity(
+        "system",
+        f"بک‌آپ گرفته شد ({'، '.join(summary['components'])}) — {summary['links_count']} کانفیگ، {summary['subs_count']} اشتراک",
+        "ok",
+    )
+    return FileResponse(
+        tmp_path,
+        media_type="application/octet-stream",
+        filename=filename,
+        headers={"X-Backup-Components": ",".join(summary["components"])},
+        background=BackgroundTask(_remove_temp_file, tmp_path),
+    )
 
 @app.post("/api/import_db_analyze")
 async def import_db_analyze(file: UploadFile = File(...), _=Depends(require_auth)):
-    if not file.filename.endswith(".db"):
-        raise HTTPException(status_code=400, detail="فرمت فایل باید .db باشد")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-    conn = None
+    tmp_path = await _upload_to_temp(file)
     try:
-        conflicts = 0
-        conn = sqlite3.connect(tmp_path)
-        for row in conn.execute("SELECT uuid FROM links"):
-            if row[0] in LINKS: conflicts += 1
-        for row in conn.execute("SELECT sub_id FROM subs"):
-            if row[0] in SUBS: conflicts += 1
-        conn.close()
-        conn = None
-        return {"ok": True, "conflicts": conflicts}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"خطا در خواندن فایل دیتابیس: {e}")
+        payload = await asyncio.to_thread(read_backup_db, tmp_path)
+        link_conflicts = sum(1 for uid in payload["links"] if uid in LINKS)
+        sub_conflicts = sum(1 for sid in payload["subs"] if sid in SUBS)
+        return {
+            "ok": True,
+            "components": sorted(payload["available"]),
+            "conflicts": link_conflicts + sub_conflicts,
+            "link_conflicts": link_conflicts,
+            "sub_conflicts": sub_conflicts,
+            "links_count": len(payload["links"]),
+            "subs_count": len(payload["subs"]),
+            "settings_keys": sorted(payload["settings"].keys()),
+            "has_auth": "auth" in payload["available"],
+            "meta": payload["meta"],
+        }
     finally:
-        if conn is not None:
-            try: conn.close()
-            except Exception: pass
-        try:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        except Exception as e:
-            logger.warning(f"Could not remove temp file {tmp_path}: {e}")
+        _remove_temp_file(tmp_path)
 
 @app.post("/api/import_db")
-async def import_db(file: UploadFile = File(...), mode: str = Form("skip"), _=Depends(require_auth)):
-    if not file.filename.endswith(".db"):
-        raise HTTPException(status_code=400, detail="فرمت فایل باید .db باشد")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-    conn = None
+async def import_db(file: UploadFile = File(...), mode: str = Form("skip"),
+                    components: str = Form(""), token=Depends(require_auth)):
+    """بازیابی فایل بک‌آپ. `mode` فقط سرنوشت رکوردهای تکراری کانفیگ/اشتراک را
+    تعیین می‌کند؛ تنظیمات و رمز عبور تنها وقتی نوشته می‌شوند که ادمین صریحاً
+    آن‌ها را در `components` بخواهد."""
+    if mode not in ("skip", "overwrite"):
+        raise HTTPException(status_code=400, detail="حالت بازیابی باید skip یا overwrite باشد")
+    tmp_path = await _upload_to_temp(file)
     try:
-        imported_links = {}
-        imported_subs = {}
-        conn = sqlite3.connect(tmp_path)
-        for row in conn.execute("SELECT uuid, data FROM links"):
-            imported_links[row[0]] = json.loads(row[1])
-        for row in conn.execute("SELECT sub_id, data FROM subs"):
-            imported_subs[row[0]] = json.loads(row[1])
-        conn.close()
-        conn = None
-                
-        async with LINKS_LOCK:
-            for uid, ldata in imported_links.items():
-                if uid in LINKS:
-                    if mode == "overwrite":
-                        LINKS[uid] = ldata
-                else:
-                    LINKS[uid] = ldata
-                    
-        async with SUBS_LOCK:
-            for sid, sdata in imported_subs.items():
-                if sid in SUBS:
-                    if mode == "overwrite":
-                        SUBS[sid] = sdata
-                else:
-                    SUBS[sid] = sdata
-                    
+        payload = await asyncio.to_thread(read_backup_db, tmp_path)
+        requested = parse_backup_components(components, require_data=False)
+        selected = requested & payload["available"]
+        if not selected:
+            raise HTTPException(status_code=400, detail="هیچ‌کدام از بخش‌های انتخاب‌شده در این فایل موجود نیست")
+
+        added_links = updated_links = added_subs = updated_subs = 0
+        if "links" in selected:
+            async with LINKS_LOCK:
+                for uid, data in payload["links"].items():
+                    if uid in LINKS:
+                        if mode == "overwrite":
+                            LINKS[uid] = data
+                            updated_links += 1
+                    else:
+                        LINKS[uid] = data
+                        added_links += 1
+
+        if "subs" in selected:
+            async with LINKS_LOCK:
+                known_links = set(LINKS.keys())
+            async with SUBS_LOCK:
+                for sid, data in payload["subs"].items():
+                    record = dict(data)
+                    # ارجاع به کانفیگ‌هایی که وارد نشده‌اند حذف می‌شود تا اشتراک شکسته نماند
+                    record["links"] = [uid for uid in (record.get("links") or []) if uid in known_links]
+                    if sid in SUBS:
+                        if mode == "overwrite":
+                            SUBS[sid] = record
+                            updated_subs += 1
+                    else:
+                        SUBS[sid] = record
+                        added_subs += 1
+
+        settings_restored = 0
+        if "settings" in selected:
+            for key, value in payload["settings"].items():
+                SETTINGS[key] = value
+                settings_restored += 1
+
+        auth_restored = False
+        if "auth" in selected and payload["password_hash"]:
+            AUTH["password_hash"] = payload["password_hash"]
+            auth_restored = True
+            async with SESSIONS_LOCK:
+                SESSIONS.clear()
+                SESSIONS[token] = time.time() + SESSION_TTL
+
         await save_state()
-        log_activity("system", f"دیتابیس با موفقیت ایمپورت شد (حالت: {mode})", "ok")
-        return {"ok": True}
+        log_activity(
+            "system",
+            f"بازیابی بک‌آپ انجام شد (بخش‌ها: {'، '.join(sorted(selected))} | حالت: {mode}) — "
+            f"{added_links + added_subs} مورد افزوده، {updated_links + updated_subs} مورد جایگزین شد",
+            "ok",
+        )
+        return {
+            "ok": True,
+            "restored": sorted(selected),
+            "skipped": sorted(requested - selected),
+            "added_links": added_links,
+            "updated_links": updated_links,
+            "added_subs": added_subs,
+            "updated_subs": updated_subs,
+            "settings_restored": settings_restored,
+            "auth_restored": auth_restored,
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Import DB error: {e}")
-        raise HTTPException(status_code=400, detail=f"خطا در خواندن فایل دیتابیس: {e}")
+        raise HTTPException(status_code=400, detail=f"خطا در بازیابی فایل بک‌آپ: {e}")
     finally:
-        if conn is not None:
-            try: conn.close()
-            except Exception: pass
-        try:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        except Exception as e:
-            logger.warning(f"Could not remove temp file {tmp_path}: {e}")
+        _remove_temp_file(tmp_path)
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
 @app.get("/stats")
@@ -1099,7 +1446,9 @@ async def get_stats(_=Depends(require_auth)):
     async with SUBS_LOCK:
         snap_subs = dict(SUBS)
     return {
-        "active_connections": len(connections),
+        "active_connections": active_user_count(),
+        "active_users": active_user_count(),
+        "active_streams": len(connections),
         "total_traffic_mb": round(stats["total_bytes"] / (1024 ** 2), 2),
         "total_requests": stats["total_requests"],
         "total_errors": stats["total_errors"],
@@ -1243,7 +1592,9 @@ async def get_connections(_=Depends(require_auth)):
             "label": cfg["label"],
             "protocol": cfg["protocol"],
             "ip_count": len(ip_list),
+            "users": len(ip_list),
             "sessions": cfg["sessions"],
+            "streams": cfg["sessions"],
             "bytes": cfg["bytes"],
             "bytes_fmt": fmt_bytes(cfg["bytes"]),
             "connected_at": cfg["first_connected_at"],
@@ -1255,6 +1606,8 @@ async def get_connections(_=Depends(require_auth)):
     return {
         "configs": configs,
         "count": len(configs),
+        "users": active_user_count(),
+        "streams": len(connections),
         "raw_count": len(connections),
     }
 
@@ -1413,9 +1766,12 @@ async def list_links(request: Request, _=Depends(require_auth)):
     host = get_host(request)
     async with LINKS_LOCK:
         snap = dict(LINKS)
+    async with SUBS_LOCK:
+        subs_snap = dict(SUBS)
     result = []
     for uid, d in snap.items():
         proto = d.get("protocol", DEFAULT_PROTOCOL)
+        link_ips = active_ips_for_link(uid, d, subs_snapshot=subs_snap)
         result.append({
             "uuid": uid,
             **d,
@@ -1424,7 +1780,8 @@ async def list_links(request: Request, _=Depends(require_auth)):
             "vless_link": vless_link_for_link(d, uid, host),
             "sub_url": f"https://{host}/sub/{uid}",
             "raw_sub_url": f"https://{host}/sub/{uid}",
-            "connected_ips": len(unique_ips_for_uuid(uid)),
+            "connected_ips": len(link_ips),
+            "active_users": len(link_ips),
             "sub_id": d.get("sub_id"),
         })
     result.sort(key=lambda x: x["created_at"], reverse=True)
@@ -1522,10 +1879,67 @@ async def delete_link(uid: str, _=Depends(require_auth)):
         for sid, sub in SUBS.items():
             if "links" in sub and uid in sub["links"]:
                 sub["links"].remove(uid)
-                
+
+    from speed_limit import reset_bucket
+    reset_bucket(uid)
+
     asyncio.create_task(save_state())
     log_activity("link", f"کانفیگ «{label}» حذف شد", "warn")
     return {"ok": True, "deleted": uid}
+
+def _normalize_bulk_ids(raw) -> list[str]:
+    """اعتبارسنجی و یکتاسازی فهرست شناسه‌های ارسالی برای عملیات گروهی (با حفظ ترتیب)."""
+    if not isinstance(raw, list):
+        raise HTTPException(status_code=400, detail="فهرست شناسه‌ها نامعتبر است")
+    cleaned = [str(item).strip() for item in raw if item]
+    return list(dict.fromkeys(uid for uid in cleaned if uid))
+
+def _bulk_label_preview(labels: list[str], limit: int = 3) -> str:
+    preview = "، ".join(labels[:limit])
+    remaining = len(labels) - limit
+    if remaining > 0:
+        preview += f" و {remaining} مورد دیگر"
+    return preview
+
+@app.post("/api/links/bulk_delete")
+async def bulk_delete_links(request: Request, _=Depends(require_auth)):
+    body = await request.json()
+    ids = _normalize_bulk_ids(body.get("ids"))
+    if not ids:
+        raise HTTPException(status_code=400, detail="هیچ کانفیگی برای حذف انتخاب نشده است")
+
+    deleted_ids: list[str] = []
+    deleted_labels: list[str] = []
+    async with LINKS_LOCK:
+        for uid in ids:
+            link = LINKS.pop(uid, None)
+            if link is None:
+                continue
+            deleted_ids.append(uid)
+            deleted_labels.append(str(link.get("label") or uid))
+
+    if not deleted_ids:
+        raise HTTPException(status_code=404, detail="هیچ‌کدام از کانفیگ‌های انتخاب‌شده پیدا نشد")
+
+    deleted_set = set(deleted_ids)
+    async with SUBS_LOCK:
+        for sub in SUBS.values():
+            current = sub.get("links")
+            if current:
+                sub["links"] = [uid for uid in current if uid not in deleted_set]
+
+    from speed_limit import reset_bucket
+    for uid in deleted_ids:
+        reset_bucket(uid)
+
+    asyncio.create_task(save_state())
+    log_activity("link", f"{len(deleted_ids)} کانفیگ به‌صورت گروهی حذف شد ({_bulk_label_preview(deleted_labels)})", "warn")
+    return {
+        "ok": True,
+        "deleted": deleted_ids,
+        "deleted_count": len(deleted_ids),
+        "missing": [uid for uid in ids if uid not in deleted_set],
+    }
 
 # ── Subscription Management APIs ──────────────────────────────────────────────
 @app.post("/api/subs")
@@ -1582,8 +1996,8 @@ async def list_subs(request: Request, _=Depends(require_auth)):
         
     for sid, s in snap.items():
         sub_links = s.get("links", [])
-        sub_conn_count = sum(1 for c in connections.values() if c.get("uuid") in sub_links or c.get("uuid") == sid)
-        
+        sub_users = len(active_ips_for_sub(sid, s))
+
         sub_used = get_sub_used_bytes(sid, s)
         result.append({
             "sub_id": sid,
@@ -1591,7 +2005,8 @@ async def list_subs(request: Request, _=Depends(require_auth)):
             "used_bytes": sub_used,
             "expired": is_sub_expired(s),
             "links_count": len(sub_links),
-            "connections": sub_conn_count,
+            "connections": sub_users,
+            "active_users": sub_users,
             "used_fmt": fmt_bytes(sub_used),
             "limit_fmt": "∞" if s.get("limit_bytes", 0) == 0 else fmt_bytes(s["limit_bytes"]),
             "sub_url": f"https://{host}/sub/{sid}",
@@ -1647,10 +2062,47 @@ async def delete_sub(sid: str, _=Depends(require_auth)):
             raise HTTPException(status_code=404, detail="sub not found")
         label = SUBS[sid].get("label", sid)
         del SUBS[sid]
-            
+
+    from speed_limit import reset_bucket
+    reset_bucket(sid)
+
     asyncio.create_task(save_state())
     log_activity("sub", f"اشتراک «{label}» حذف شد", "err")
     return {"ok": True, "deleted": sid}
+
+@app.post("/api/subs/bulk_delete")
+async def bulk_delete_subs(request: Request, _=Depends(require_auth)):
+    body = await request.json()
+    ids = _normalize_bulk_ids(body.get("ids"))
+    if not ids:
+        raise HTTPException(status_code=400, detail="هیچ اشتراکی برای حذف انتخاب نشده است")
+
+    deleted_ids: list[str] = []
+    deleted_labels: list[str] = []
+    async with SUBS_LOCK:
+        for sid in ids:
+            sub = SUBS.pop(sid, None)
+            if sub is None:
+                continue
+            deleted_ids.append(sid)
+            deleted_labels.append(str(sub.get("label") or sid))
+
+    if not deleted_ids:
+        raise HTTPException(status_code=404, detail="هیچ‌کدام از اشتراک‌های انتخاب‌شده پیدا نشد")
+
+    from speed_limit import reset_bucket
+    for sid in deleted_ids:
+        reset_bucket(sid)
+
+    deleted_set = set(deleted_ids)
+    asyncio.create_task(save_state())
+    log_activity("sub", f"{len(deleted_ids)} اشتراک به‌صورت گروهی حذف شد ({_bulk_label_preview(deleted_labels)})", "err")
+    return {
+        "ok": True,
+        "deleted": deleted_ids,
+        "deleted_count": len(deleted_ids),
+        "missing": [sid for sid in ids if sid not in deleted_set],
+    }
 
 @app.post("/api/subs/{sid}/reset_usage")
 async def reset_sub_usage(sid: str, _=Depends(require_auth)):
@@ -1742,24 +2194,16 @@ async def public_sub_data(uuid_key: str, request: Request):
     if sub:
         async with LINKS_LOCK:
             sub_links = {uid: LINKS[uid] for uid in sub.get("links", []) if uid in LINKS}
-            
+
         links_sum = sum(l.get("used_bytes", 0) for l in sub_links.values())
         total_used = get_sub_used_bytes(uuid_key, sub)
-        active_conns = 0
         links_out = []
-        
+        single_sub_view = {uuid_key: sub}
+
         for uid, l in sub_links.items():
             allowed = is_link_allowed(l)
             lp = l.get("protocol", DEFAULT_PROTOCOL)
-            c_count = 0
-            for c in connections.values():
-                c_uid = c.get("uuid")
-                c_trans = c.get("transport") or c.get("type", "")
-                if c_uid == uid:
-                    c_count += 1
-                elif c_uid == uuid_key:
-                    if c_trans == lp or ("ws" in c_trans and "ws" in lp) or ("grpc" in c_trans and "grpc" in lp) or ("xhttp" in c_trans and "xhttp" in lp) or ("socks" in c_trans.lower() and lp in ("socks5", "socks", "custom")):
-                        c_count += 1
+            link_users = len(active_ips_for_link(uid, l, subs_snapshot=single_sub_view))
 
             links_out.append({
                 "uuid": uid,
@@ -1773,12 +2217,13 @@ async def public_sub_data(uuid_key: str, request: Request):
                 "expires_at": l.get("expires_at"),
                 "vless_link": vless_link_for_link(l, uid, host, sub_id=uuid_key),
                 "sub_url": f"https://{host}/sub/{uid}",
-                "connections": c_count,
+                "connections": link_users,
+                "active_users": link_users,
                 "ip_limit": l.get("ip_limit", 0),
                 "speed_limit_bytes": l.get("speed_limit_bytes", 0),
             })
 
-        active_conns = sum(1 for c in connections.values() if c.get("uuid") == uuid_key or c.get("uuid") in sub_links)
+        active_conns = len(active_ips_for_sub(uuid_key, sub))
 
         return {
             "locked": False,
@@ -1788,6 +2233,7 @@ async def public_sub_data(uuid_key: str, request: Request):
             "sub_url": f"https://{host}/sub/{uuid_key}",
             "raw_sub_url": f"https://{host}/sub/{uuid_key}",
             "active_connections": active_conns,
+            "active_users": active_conns,
             "used_bytes": total_used,
             "total_used_fmt": fmt_bytes(total_used),
             "limit_bytes": sub.get("limit_bytes", 0),
@@ -1803,7 +2249,9 @@ async def public_sub_data(uuid_key: str, request: Request):
         raise HTTPException(status_code=404, detail="not found")
 
     allowed = is_link_allowed(link)
-    conn_count = sum(1 for c in connections.values() if c.get("uuid") == uuid_key)
+    async with SUBS_LOCK:
+        subs_snap = dict(SUBS)
+    conn_count = len(active_ips_for_link(uuid_key, link, subs_snapshot=subs_snap))
     proto = link.get("protocol", DEFAULT_PROTOCOL)
     link_out = {
         "uuid": uuid_key,
@@ -1819,6 +2267,7 @@ async def public_sub_data(uuid_key: str, request: Request):
         "sub_url": f"https://{host}/sub/{uuid_key}",
         "raw_sub_url": f"https://{host}/sub/{uuid_key}",
         "connections": conn_count,
+        "active_users": conn_count,
         "ip_limit": link.get("ip_limit", 0),
         "speed_limit_bytes": link.get("speed_limit_bytes", 0),
     }
@@ -1830,6 +2279,7 @@ async def public_sub_data(uuid_key: str, request: Request):
         "sub_url": f"https://{host}/sub/{uuid_key}",
         "raw_sub_url": f"https://{host}/sub/{uuid_key}",
         "active_connections": conn_count,
+        "active_users": conn_count,
         "total_used_fmt": fmt_bytes(link.get("used_bytes", 0)),
         "limit_bytes": link.get("limit_bytes", 0),
         "limit_fmt": "∞" if link.get("limit_bytes", 0) == 0 else fmt_bytes(link["limit_bytes"]),

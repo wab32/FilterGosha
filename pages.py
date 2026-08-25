@@ -60,7 +60,7 @@ input:focus+.ic{color:var(--accent)}
   <div class="card">
     <div class="brand">
       <div class="brand-img"></div>
-      <div><div class="brand-name"><a href="https://t.me/FilterGosha" target="_blank">FilterGosha</a></div><div class="brand-sub">v1.3.3</div></div>
+      <div><div class="brand-name"><a href="https://t.me/FilterGosha" target="_blank">FilterGosha</a></div><div class="brand-sub">v1.4.13</div></div>
     </div>
     <h1>ورود به پنل مدیریت</h1>
     <p class="sub">رمز عبور را برای دسترسی به داشبورد وارد کنید</p>
@@ -154,6 +154,7 @@ body{display:flex;overflow-x:hidden}
 .dg{background:var(--green)}
 .pulse{animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
 .metric{background:var(--card);border:1px solid var(--card-b);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);transition:.2s}
 .metric:hover{border-color:var(--card-bh);transform:translateY(-1px)}
@@ -180,6 +181,7 @@ body{display:flex;overflow-x:hidden}
 .btn-d:hover{background:rgba(239,68,68,.25)}
 .btn-amber{background:var(--amber-bg);color:var(--amber-t);border:1px solid rgba(242,163,61,.2)}
 .btn-sm{padding:5px 11px;font-size:11px;border-radius:8px}
+.btn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
 .inp{background:rgba(0,0,0,.3);border:1px solid var(--card-b);color:var(--t1);border-radius:10px;padding:9px 13px;font-size:12.5px;outline:none;width:100%;transition:.18s}
 .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-d)}
 select.inp{appearance:none;cursor:pointer}
@@ -212,6 +214,32 @@ select.inp{appearance:none;cursor:pointer}
 .utxt{font-size:10.5px;color:var(--t3);display:flex;justify-content:space-between}
 .cfg-checklist{max-height:160px;overflow-y:auto;border:1px solid var(--card-b);border-radius:10px;padding:8px 12px;background:rgba(0,0,0,.2)}
 .cfg-chk-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:var(--t1);cursor:pointer}
+.bulk-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:11px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.bulk-all{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--t2);cursor:pointer;user-select:none}
+.bulk-all:hover{color:var(--accent)}
+.bulk-count{font-size:11.5px;font-weight:700;color:var(--t3)}
+.bulk-count.has-sel{color:var(--accent)}
+.bulk-del{margin-inline-start:auto}
+.bulk-chk{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.bk-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:9px}
+.bk-item{display:flex;align-items:flex-start;gap:9px;background:rgba(0,0,0,.22);border:1px solid var(--card-b);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.16s}
+.bk-item:hover{border-color:var(--card-bh);background:rgba(16,185,129,.05)}
+.bk-item input{margin-top:2px}
+.bk-item b{display:block;font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:3px}
+.bk-item i{display:block;font-style:normal;font-size:10.5px;line-height:1.6;color:var(--t3)}
+.bk-hint{margin-top:11px;font-size:11px;font-weight:600;color:var(--t2);background:rgba(0,0,0,.22);border:1px solid var(--card-b);border-radius:10px;padding:9px 12px}
+.bk-hint.bk-warn{color:var(--red-t);border-color:rgba(239,68,68,.28);background:rgba(239,68,68,.07)}
+.github-btn{display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,.06);color:#fff;border-radius:9px;padding:9px;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,.35);cursor:pointer;width:100%;text-decoration:none;margin-bottom:8px;animation:ghWhite 4.2s ease-in-out infinite;transition:transform .15s}
+.github-btn i{font-size:15px}
+.github-btn:hover{transform:translateY(-1px);animation-duration:1.5s}
+@keyframes ghWhite{
+  0%,100%{color:#ffffff;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.30);box-shadow:0 0 8px rgba(255,255,255,.14),inset 0 0 8px rgba(255,255,255,.03);text-shadow:0 0 6px rgba(255,255,255,.30)}
+  20%{color:#f0ffff;background:rgba(240,255,255,.10);border-color:rgba(240,255,255,.62);box-shadow:0 0 18px rgba(240,255,255,.40),inset 0 0 12px rgba(240,255,255,.07);text-shadow:0 0 10px rgba(240,255,255,.60)}
+  40%{color:#f5fffa;background:rgba(245,255,250,.13);border-color:rgba(245,255,250,.80);box-shadow:0 0 24px rgba(245,255,250,.52),inset 0 0 14px rgba(245,255,250,.09);text-shadow:0 0 13px rgba(245,255,250,.75)}
+  60%{color:#fffff0;background:rgba(255,255,240,.11);border-color:rgba(255,255,240,.66);box-shadow:0 0 20px rgba(255,255,240,.44),inset 0 0 12px rgba(255,255,240,.07);text-shadow:0 0 11px rgba(255,255,240,.62)}
+  80%{color:#fff5ee;background:rgba(255,245,238,.08);border-color:rgba(255,245,238,.46);box-shadow:0 0 13px rgba(255,245,238,.26),inset 0 0 10px rgba(255,245,238,.05);text-shadow:0 0 8px rgba(255,245,238,.44)}
+}
+@media(prefers-reduced-motion:reduce){.github-btn{animation:none;color:#fff;border-color:rgba(255,255,255,.5);box-shadow:0 0 14px rgba(255,255,255,.25)}}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:180}
 .overlay.open{display:block}
 @media(max-width:900px){
@@ -234,7 +262,7 @@ select.inp{appearance:none;cursor:pointer}
   <button class="menu-btn" id="close-sb" style="position:absolute;left:10px;top:14px"><i class="ti ti-x"></i></button>
   <div class="logo">
     <div class="logo-img"></div>
-    <div><div class="logo-name"><a href="https://t.me/FilterGosha" target="_blank">FilterGosha</a></div><div class="logo-sub">v1.3.3 · gRPC / WS / XHTTP / SOCKS</div></div>
+    <div><div class="logo-name"><a href="https://t.me/FilterGosha" target="_blank">FilterGosha</a></div><div class="logo-sub">v1.4.13 · gRPC / WS / XHTTP / SOCKS</div></div>
   </div>
   <div class="nav-wrap">
     <div class="nav-sec">پنل</div>
@@ -248,6 +276,7 @@ select.inp{appearance:none;cursor:pointer}
     <div class="nav-it" data-pg="errors"><i class="ti ti-alert-triangle"></i> خطاها</div>
   </div>
   <div class="sb-foot">
+    <a class="github-btn" href="https://github.com/amirmarandidev/FilterGosha" target="_blank" rel="noopener noreferrer"><i class="ti ti-brand-github"></i> صفحه گیت‌هاب پروژه</a>
     <button class="logout-btn" id="logout-btn"><i class="ti ti-logout"></i> خروج از پنل</button>
   </div>
 </aside>
@@ -308,7 +337,7 @@ select.inp{appearance:none;cursor:pointer}
   <!-- DASHBOARD FOOTER -->
   <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;margin-top:20px;border-top:1px solid var(--card-b);font-size:11px;color:var(--t3)">
     <div><a href="https://t.me/FilterGosha" target="_blank" style="color:var(--accent2);text-decoration:none"><i class="ti ti-brand-telegram"></i> t.me/FilterGosha</a></div>
-    <div>FilterGosha v1.3.3 · Railway</div>
+    <div>FilterGosha v1.4.13 · Railway</div>
   </div>
 </section>
 
@@ -320,6 +349,11 @@ select.inp{appearance:none;cursor:pointer}
       <button class="btn btn-p" onclick="openSubModal()"><i class="ti ti-plus"></i> اشتراک جدید</button>
       <button class="btn btn-g" onclick="loadSubs()"><i class="ti ti-refresh"></i></button>
     </div>
+  </div>
+  <div class="bulk-bar" id="subs-bulk-bar" style="display:none">
+    <label class="bulk-all"><input type="checkbox" class="bulk-chk" id="subs-chk-all" onchange="toggleSelectAll('subs', this.checked)"> انتخاب همه</label>
+    <span class="bulk-count" id="subs-bulk-count">هیچ اشتراکی انتخاب نشده</span>
+    <button class="btn btn-d btn-sm bulk-del" id="subs-bulk-del" onclick="bulkDelete('subs')" disabled><i class="ti ti-trash"></i> حذف گروهی اشتراک‌ها</button>
   </div>
   <div id="subs-list">
     <div style="text-align:center;padding:40px;color:var(--t3)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:24px"></i><br>در حال بارگذاری اشتراک‌ها...</div>
@@ -334,6 +368,11 @@ select.inp{appearance:none;cursor:pointer}
       <button class="btn btn-p" onclick="openLinkModal()"><i class="ti ti-plus"></i> کانفیگ جدید</button>
       <button class="btn btn-g" onclick="loadLinks()"><i class="ti ti-refresh"></i></button>
     </div>
+  </div>
+  <div class="bulk-bar" id="links-bulk-bar" style="display:none">
+    <label class="bulk-all"><input type="checkbox" class="bulk-chk" id="links-chk-all" onchange="toggleSelectAll('links', this.checked)"> انتخاب همه</label>
+    <span class="bulk-count" id="links-bulk-count">هیچ کانفیگی انتخاب نشده</span>
+    <button class="btn btn-d btn-sm bulk-del" id="links-bulk-del" onclick="bulkDelete('links')" disabled><i class="ti ti-trash"></i> حذف گروهی کانفیگ‌ها</button>
   </div>
   <div id="links-list">
     <div style="text-align:center;padding:40px;color:var(--t3)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:24px"></i><br>در حال بارگذاری کانفیگ‌ها...</div>
@@ -401,9 +440,35 @@ select.inp{appearance:none;cursor:pointer}
 
   <div class="card" style="margin-top:16px">
     <div class="card-title"><i class="ti ti-database"></i> بک‌آپ و بازیابی دیتابیس (SQLite)</div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">شما می‌توانید از کل اطلاعات پنل (لینک‌ها، اشتراک‌ها و تنظیمات) فایل بک‌آپ با فرمت db. دریافت کنید یا فایل بک‌آپ قبلی را بازیابی کنید.</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-p" type="button" onclick="window.location.href='/api/export_db'"><i class="ti ti-download"></i> دانلود بک‌آپ (.db)</button>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">
+      بخش‌هایی که می‌خواهید در فایل بک‌آپ باشند را تیک بزنید. فایل <code>.db</code> خروجی <b>تنها</b> شامل موارد انتخاب‌شده است
+      و ساختار جداول آن دقیقاً مانند دیتابیس پنل است، پس در هر پنل FilterGosha دیگری بدون خطا قابل بازیابی است.
+    </div>
+    <div class="bk-list">
+      <label class="bk-item">
+        <input type="checkbox" class="bulk-chk bk-chk" value="links" checked onchange="syncBackupSelection()">
+        <span><b>کانفیگ‌ها</b><i>همه‌ی کانفیگ‌ها با پروتکل، پورت، SNI، محدودیت حجم/سرعت/آی‌پی و تاریخ انقضا</i></span>
+      </label>
+      <label class="bk-item">
+        <input type="checkbox" class="bulk-chk bk-chk" value="subs" checked onchange="syncBackupSelection()">
+        <span><b>اشتراک‌ها</b><i>اشتراک‌ها، نام کاربری، محدودیت‌ها و فهرست کانفیگ‌های متصل به هر اشتراک</i></span>
+      </label>
+      <label class="bk-item">
+        <input type="checkbox" class="bulk-chk bk-chk" value="settings" checked onchange="syncBackupSelection()">
+        <span><b>تنظیمات عمومی پنل</b><i>دامنه وورکر، آی‌پی تمیز و پیشوند ریمارک</i></span>
+      </label>
+      <label class="bk-item">
+        <input type="checkbox" class="bulk-chk bk-chk" value="usage" checked onchange="syncBackupSelection()">
+        <span><b>آمار مصرف کاربران</b><i>مقدار حجم مصرف‌شده؛ در صورت غیرفعال بودن، مصرف همه در فایل صفر ذخیره می‌شود</i></span>
+      </label>
+      <label class="bk-item">
+        <input type="checkbox" class="bulk-chk bk-chk" value="auth" onchange="syncBackupSelection()">
+        <span><b>رمز عبور مدیریت پنل</b><i>هش رمز ورود؛ فقط اگر می‌خواهید پنل مقصد با همین رمز باز شود تیک بزنید</i></span>
+      </label>
+    </div>
+    <div class="bk-hint" id="bk-hint"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn btn-p" type="button" id="bk-export-btn" onclick="exportBackup()"><i class="ti ti-download"></i> دانلود بک‌آپ (.db)</button>
         <button class="btn btn-g" type="button" onclick="document.getElementById('import-db-file').click()"><i class="ti ti-upload"></i> آپلود و بازیابی (.db)</button>
         <input type="file" id="import-db-file" accept=".db" style="display:none" onchange="handleImportDB(this.files[0])">
     </div>
@@ -866,6 +931,7 @@ async function loadSettings(){
     document.getElementById('st-clean-ip').value = d.clean_ip||'';
     document.getElementById('worker-code-box').value = WORKER_SCRIPT_TEMPLATE;
     document.getElementById('pages-code-box').value = PAGES_SCRIPT_TEMPLATE;
+    syncBackupSelection();
   }catch(e){toast('خطا در دریافت تنظیمات','err')}
 }
 
@@ -929,37 +995,98 @@ function copyPagesScript(){
   navigator.clipboard.writeText(code).then(()=>toast('کد Cloudflare Pages Function کپی شد ✓','ok'));
 }
 
+// GRANULAR BACKUP / RESTORE
+const BACKUP_LABELS = {
+  links: 'کانفیگ‌ها',
+  subs: 'اشتراک‌ها',
+  settings: 'تنظیمات عمومی پنل',
+  auth: 'رمز عبور پنل',
+  usage: 'آمار مصرف',
+};
+
+function backupSelection(){
+  return Array.from(document.querySelectorAll('#pg-settings input.bk-chk:checked')).map(b=>b.value);
+}
+
+function syncBackupSelection(){
+  const sel = backupSelection();
+  const dataParts = sel.filter(v=>v!=='usage');
+  const btn = document.getElementById('bk-export-btn');
+  const hint = document.getElementById('bk-hint');
+  if(btn) btn.disabled = dataParts.length === 0;
+  if(!hint) return;
+  if(!dataParts.length){
+    hint.classList.add('bk-warn');
+    hint.innerHTML = '<i class="ti ti-alert-triangle"></i> حداقل یکی از بخش‌های داده (کانفیگ‌ها، اشتراک‌ها، تنظیمات یا رمز عبور) را انتخاب کنید.';
+    return;
+  }
+  hint.classList.remove('bk-warn');
+  const notes = [];
+  if(sel.includes('subs') && !sel.includes('links'))
+    notes.push('اشتراک‌ها بدون کانفیگ ذخیره می‌شوند، پس فهرست کانفیگ‌های هر اشتراک در فایل خالی خواهد بود.');
+  if(!sel.includes('usage'))
+    notes.push('مصرف تمام کانفیگ‌ها و اشتراک‌ها در فایل صفر ذخیره می‌شود.');
+  if(sel.includes('auth'))
+    notes.push('رمز عبور پنل هم در فایل قرار می‌گیرد؛ فایل را در جای امن نگه دارید.');
+  hint.innerHTML = '<i class="ti ti-file-check"></i> محتوای فایل: ' +
+    dataParts.map(v=>BACKUP_LABELS[v]||v).join(' + ') +
+    (notes.length ? '<div style="margin-top:6px;color:var(--t3);font-weight:500">• ' + notes.join('<br>• ') + '</div>' : '');
+}
+
+function exportBackup(){
+  const sel = backupSelection();
+  if(!sel.filter(v=>v!=='usage').length) return toast('حداقل یک بخش داده را برای بک‌آپ انتخاب کنید','err');
+  window.location.href = '/api/export_db?components=' + encodeURIComponent(sel.join(','));
+  toast('در حال ساخت فایل بک‌آپ...','ok');
+}
+
 async function handleImportDB(file) {
   if(!file) return;
-  const formData = new FormData();
-  formData.append('file', file);
+  const input = document.getElementById('import-db-file');
   try {
-    const r = await fetch('/api/import_db_analyze', {method:'POST', body:formData});
-    const d = await r.json();
-    if(!r.ok) return toast(d.detail || 'خطا در آنالیز دیتابیس','err');
-    
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/api/import_db_analyze', {method:'POST', body:fd});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.detail || 'خطا در آنالیز فایل بک‌آپ');
+
+    const present = d.components || [];
+    const lines = [
+      'محتوای فایل بک‌آپ:',
+      '• ' + (d.links_count || 0) + ' کانفیگ',
+      '• ' + (d.subs_count || 0) + ' اشتراک',
+      '• بخش‌های موجود: ' + present.map(k=>BACKUP_LABELS[k]||k).join('، '),
+      '',
+      'بازیابی این فایل انجام شود؟'
+    ];
+    if(!confirm(lines.join('\n'))){ input.value=''; return; }
+
+    const restore = present.filter(k=>k!=='auth');
+    if(present.includes('auth') && confirm('این فایل شامل رمز عبور مدیریت پنل است.\nآیا رمز فعلی پنل با رمز داخل فایل جایگزین شود؟\n\n- [OK] = بله، رمز را هم بازیابی کن\n- [Cancel] = خیر، رمز فعلی حفظ شود'))
+      restore.push('auth');
+
     let mode = 'skip';
-    if(d.conflicts > 0) {
-      if(!confirm(`تعداد ${d.conflicts} کانفیگ/اشتراک تکراری در فایل بک‌آپ یافت شد.\\nآیا می‌خواهید اطلاعات موجود در پنل با اطلاعات بک‌آپ جایگزین (Overwrite) شود؟\\n\\n- [OK] = بله جایگزین کن\\n- [Cancel] = خیر، نادیده بگیر و رد شو`)) {
-        mode = 'skip';
-      } else {
-        mode = 'overwrite';
-      }
+    if(d.conflicts > 0){
+      mode = confirm(d.conflicts + ' کانفیگ/اشتراک تکراری در فایل بک‌آپ یافت شد.\nآیا اطلاعات موجود در پنل با اطلاعات بک‌آپ جایگزین (Overwrite) شود؟\n\n- [OK] = بله جایگزین کن\n- [Cancel] = خیر، نادیده بگیر و رد شو') ? 'overwrite' : 'skip';
     }
-    
-    formData.append('mode', mode);
-    const r2 = await fetch('/api/import_db', {method:'POST', body:formData});
-    if(r2.ok) {
-      toast('دیتابیس با موفقیت بازگردانی شد ✓','ok');
-      setTimeout(()=>window.location.reload(), 1500);
-    } else {
-      const d2 = await r2.json();
-      toast(d2.detail || 'خطا در بازگردانی دیتابیس','err');
-    }
+
+    const fd2 = new FormData();
+    fd2.append('file', file);
+    fd2.append('mode', mode);
+    fd2.append('components', restore.join(','));
+    const r2 = await fetch('/api/import_db', {method:'POST', body:fd2});
+    const d2 = await r2.json().catch(()=>({}));
+    if(!r2.ok) throw new Error(d2.detail || 'خطا در بازگردانی دیتابیس');
+
+    const added = (d2.added_links||0) + (d2.added_subs||0);
+    const updated = (d2.updated_links||0) + (d2.updated_subs||0);
+    toast(`بازیابی انجام شد ✓ (${added} مورد جدید، ${updated} مورد جایگزین)`,'ok');
+    setTimeout(()=>window.location.reload(), 1500);
   } catch(e) {
-    toast('خطا در ارتباط با سرور','err');
+    toast(e.message || 'خطا در ارتباط با سرور','err');
+  } finally {
+    if(input) input.value = '';
   }
-  document.getElementById('import-db-file').value = '';
 }
 
 
@@ -1110,6 +1237,103 @@ function formatExpBadge(expStr){
   return `<span class="badge bg-green" style="background:rgba(16,185,129,0.12);color:var(--accent)"><i class="ti ti-calendar"></i> ${dateFmt} (${diffDays} روز)</span>`;
 }
 
+// BULK SELECTION (shared by subscriptions & configs pages)
+const BULK_CFG = {
+  subs: {
+    endpoint: '/api/subs/bulk_delete',
+    reload: () => loadSubs(),
+    noun: 'اشتراک',
+    emptyText: 'هیچ اشتراکی انتخاب نشده',
+    confirmText: n => `آیا از حذف ${n} اشتراک انتخاب‌شده اطمینان دارید؟\nکانفیگ‌های مرتبط حذف نمی‌شوند و فقط از این اشتراک‌ها جدا می‌شوند.`,
+  },
+  links: {
+    endpoint: '/api/links/bulk_delete',
+    reload: () => loadLinks(),
+    noun: 'کانفیگ',
+    emptyText: 'هیچ کانفیگی انتخاب نشده',
+    confirmText: n => `آیا از حذف ${n} کانفیگ انتخاب‌شده اطمینان دارید؟\nاین کانفیگ‌ها از تمام اشتراک‌های مرتبط نیز حذف خواهند شد.`,
+  },
+};
+const bulkSelected = { subs: new Set(), links: new Set() };
+
+function bulkBoxes(kind){
+  return Array.from(document.querySelectorAll(`#${kind}-list input.bulk-item`));
+}
+
+function syncBulkUI(kind){
+  const boxes = bulkBoxes(kind);
+  const sel = bulkSelected[kind];
+  const bar = document.getElementById(kind + '-bulk-bar');
+  const btn = document.getElementById(kind + '-bulk-del');
+  const cnt = document.getElementById(kind + '-bulk-count');
+  const all = document.getElementById(kind + '-chk-all');
+  if(bar) bar.style.display = boxes.length ? 'flex' : 'none';
+  if(btn) btn.disabled = sel.size === 0;
+  if(cnt){
+    cnt.textContent = sel.size ? `${sel.size} ${BULK_CFG[kind].noun} انتخاب شده` : BULK_CFG[kind].emptyText;
+    cnt.classList.toggle('has-sel', sel.size > 0);
+  }
+  if(all){
+    all.checked = boxes.length > 0 && sel.size === boxes.length;
+    all.indeterminate = sel.size > 0 && sel.size < boxes.length;
+  }
+}
+
+function toggleBulkItem(kind, id, checked){
+  if(checked) bulkSelected[kind].add(id);
+  else bulkSelected[kind].delete(id);
+  syncBulkUI(kind);
+}
+
+function toggleSelectAll(kind, checked){
+  const sel = bulkSelected[kind];
+  bulkBoxes(kind).forEach(box=>{
+    box.checked = checked;
+    if(checked) sel.add(box.value); else sel.delete(box.value);
+  });
+  syncBulkUI(kind);
+}
+
+function restoreBulkSelection(kind, availableIds){
+  const sel = bulkSelected[kind];
+  const alive = new Set(availableIds);
+  Array.from(sel).forEach(id=>{ if(!alive.has(id)) sel.delete(id); });
+  bulkBoxes(kind).forEach(box=>{ box.checked = sel.has(box.value); });
+  syncBulkUI(kind);
+}
+
+async function bulkDelete(kind){
+  const cfg = BULK_CFG[kind];
+  const ids = Array.from(bulkSelected[kind]);
+  if(!ids.length) return toast(cfg.emptyText, 'err');
+  if(!confirm(cfg.confirmText(ids.length))) return;
+
+  const btn = document.getElementById(kind + '-bulk-del');
+  const original = btn ? btn.innerHTML : '';
+  if(btn){
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> در حال حذف...';
+  }
+  try{
+    const r = await fetch(cfg.endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ids })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.detail || 'خطا در حذف گروهی');
+    bulkSelected[kind].clear();
+    const missing = (d.missing || []).length;
+    toast(`${d.deleted_count || 0} ${cfg.noun} حذف شد ✓` + (missing ? ` (${missing} مورد یافت نشد)` : ''), 'ok');
+    await cfg.reload();
+  }catch(e){
+    toast(e.message || 'خطا در ارتباط با سرور', 'err');
+  }finally{
+    if(btn){ btn.innerHTML = original; }
+    syncBulkUI(kind);
+  }
+}
+
 // SUBSCRIPTION MANAGEMENT
 let allAvailableLinks = [];
 let currentSubId = '';
@@ -1125,6 +1349,8 @@ function renderSubs(subs){
   const el=document.getElementById('subs-list');
   if(!subs.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--t3)"><i class="ti ti-users-group" style="font-size:32px;display:block;margin-bottom:10px"></i>هیچ اشتراکی تعریف نشده است. بر روی «اشتراک جدید» کلیک کنید.</div>';
+    bulkSelected.subs.clear();
+    syncBulkUI('subs');
     return;
   }
   el.innerHTML=subs.map(s=>{
@@ -1133,12 +1359,15 @@ function renderSubs(subs){
     return `
       <div class="sub-card">
         <div class="sub-head">
-          <div>
-            <div class="sub-label">${esc(s.label)}</div>
-            <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
-              <span class="badge bg-blue" style="margin-left:6px"><i class="ti ti-link"></i> ${s.links_count} کانفیگ</span>
-              <span class="badge bg-green"><i class="ti ti-plug-connected"></i> ${s.connections} اتصال فعال</span>
-              <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(s.expires_at)}</span>
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <input type="checkbox" class="bulk-chk bulk-item" style="margin-top:4px" value="${esc(s.sub_id)}" title="انتخاب برای حذف گروهی" onchange="toggleBulkItem('subs','${esc(s.sub_id)}',this.checked)">
+            <div>
+              <div class="sub-label">${esc(s.label)}</div>
+              <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
+                <span class="badge bg-blue" style="margin-left:6px"><i class="ti ti-link"></i> ${s.links_count} کانفیگ</span>
+                <span class="badge bg-green"><i class="ti ti-plug-connected"></i> ${s.connections} اتصال فعال</span>
+                <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(s.expires_at)}</span>
+              </div>
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1164,6 +1393,7 @@ function renderSubs(subs){
       </div>
     `;
   }).join('');
+  restoreBulkSelection('subs', subs.map(s=>s.sub_id));
 }
 
 async function resetSubUsage(sid){
@@ -1289,6 +1519,8 @@ function renderLinks(links){
   const el=document.getElementById('links-list');
   if(!links.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--t3)"><i class="ti ti-link" style="font-size:32px;display:block;margin-bottom:10px"></i>هیچ کانفیگی ساخته نشده است. بر روی «کانفیگ جدید» کلیک کنید.</div>';
+    bulkSelected.links.clear();
+    syncBulkUI('links');
     return;
   }
   el.innerHTML=links.map(l=>{
@@ -1299,12 +1531,15 @@ function renderLinks(links){
     return `
       <div class="sub-card">
         <div class="sub-head">
-          <div>
-            <div class="sub-label">${esc(l.label)}</div>
-            <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
-              ${protoChipText(l.protocol)}
-              <span class="badge bg-blue" style="margin-right:6px"><i class="ti ti-plug-connected"></i> ${l.connected_ips||0} آی‌پی متصل</span>
-              <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(l.expires_at)}</span>
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <input type="checkbox" class="bulk-chk bulk-item" style="margin-top:4px" value="${esc(l.uuid)}" title="انتخاب برای حذف گروهی" onchange="toggleBulkItem('links','${esc(l.uuid)}',this.checked)">
+            <div>
+              <div class="sub-label">${esc(l.label)}</div>
+              <div style="font-size:10.5px;color:var(--t3);margin-top:4px">
+                ${protoChipText(l.protocol)}
+                <span class="badge bg-blue" style="margin-right:6px"><i class="ti ti-plug-connected"></i> ${l.connected_ips||0} آی‌پی متصل</span>
+                <span style="margin-right:8px"><i class="ti ti-calendar"></i> انقضا: ${formatExpBadge(l.expires_at)}</span>
+              </div>
             </div>
           </div>
           <div style="display:flex;gap:6px">
@@ -1325,6 +1560,7 @@ function renderLinks(links){
       </div>
     `;
   }).join('');
+  restoreBulkSelection('links', links.map(l=>l.uuid));
 }
 
 async function resetLinkUsage(uid){
@@ -1515,6 +1751,7 @@ async function loadActivity(){
 document.addEventListener('DOMContentLoaded',()=>{
   initChart();
   fetchStats();
+  syncBackupSelection();
   setInterval(fetchStats,5000);
 });
 </script>
@@ -1627,7 +1864,7 @@ html,body{{min-height:100%;background:var(--bg);font-family:'Vazirmatn',sans-ser
   <div id="root">
     <div style="text-align:center;padding:80px 20px;color:var(--t3)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:32px"></i><br><br>در حال بارگذاری اشتراک...</div>
   </div>
-  <div class="footer">پشتیبانی: <a href="https://t.me/kouroxdev" target="_blank">@kouroxdev</a> · FilterGosha</div>
+  <div class="footer">پشتیبانی: <a href="https://t.me/filtergosha" target="_blank">@FilterGosha</a> · FilterGosha</div>
 </div>
 
 <script>
@@ -1656,9 +1893,9 @@ function renderContent(d){{
   const activeCount=d.links.filter(l=>l.active).length;
   const baseSubUrl = d.sub_url || (window.location.protocol + '//' + window.location.host + '/sub/' + UUID_KEY);
 
-  window._x4gSubUrl  = baseSubUrl;
-  window._x4gSubName = d.name;
-  window._x4gLinks   = d.links.map(l => ({{
+  window._fgSubUrl  = baseSubUrl;
+  window._fgSubName = d.name;
+  window._fgLinks   = d.links.map(l => ({{
     vless : l.vless_link,
     label : l.label,
   }}));
@@ -1670,7 +1907,7 @@ function renderContent(d){{
       ${{d.desc ? `<div class="sub-desc">${{esc(d.desc)}}</div>` : ''}}
       <div style="display:flex;gap:14px;font-size:10.5px;color:var(--t3);margin-bottom:14px;flex-wrap:wrap">
         <span><i class="ti ti-clock"></i> بروزرسانی: ${{new Date().toLocaleTimeString('fa-IR')}}</span>
-        <span><i class="ti ti-calendar"></i> انقضا: <b style="color:var(--accent)">${{d.expires_at ? new Date(d.expires_at).toLocaleDateString('fa-IR', {year:'numeric',month:'long',day:'numeric'}) : 'نامحدود'}}</b></span>
+        <span><i class="ti ti-calendar"></i> انقضا: <b style="color:var(--accent)">${{d.expires_at ? new Date(d.expires_at).toLocaleDateString('fa-IR', {{year:'numeric',month:'long',day:'numeric'}}) : 'نامحدود'}}</b></span>
       </div>
       
       ${{d.username ? `
@@ -1685,11 +1922,11 @@ function renderContent(d){{
       <div class="sub-sub-box">
         <span class="sub-sub-url">${{esc(baseSubUrl)}}</span>
         <button class="btn btn-p" style="padding:6px 12px;font-size:10.5px"
-          onclick="navigator.clipboard.writeText(window._x4gSubUrl).then(()=>toast('لینک ساب کپی شد ✓','ok'))">
+          onclick="navigator.clipboard.writeText(window._fgSubUrl).then(()=>toast('لینک ساب کپی شد ✓','ok'))">
           <i class="ti ti-copy"></i> کپی لینک ساب
         </button>
         <button class="btn btn-g" style="padding:6px 12px;font-size:10.5px"
-          onclick="showQR(window._x4gSubName, window._x4gSubUrl)">
+          onclick="showQR(window._fgSubName, window._fgSubUrl)">
           <i class="ti ti-qrcode"></i> QR
         </button>
       </div>
@@ -1747,8 +1984,8 @@ function renderContent(d){{
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <span style="font-size:11px;font-weight:700;color:var(--t2)"><i class="ti ti-key"></i> لینک کانفیگ:</span>
                 <div style="display:flex;gap:6px">
-                  <button class="btn btn-p" onclick="navigator.clipboard.writeText(window._x4gLinks[${{i}}].vless).then(()=>toast('لینک کپی شد ✓','ok'))"><i class="ti ti-copy"></i> کپی</button>
-                  <button class="btn btn-g" onclick="showQR(window._x4gLinks[${{i}}].label, window._x4gLinks[${{i}}].vless)"><i class="ti ti-qrcode"></i> QR</button>
+                  <button class="btn btn-p" onclick="navigator.clipboard.writeText(window._fgLinks[${{i}}].vless).then(()=>toast('لینک کپی شد ✓','ok'))"><i class="ti ti-copy"></i> کپی</button>
+                  <button class="btn btn-g" onclick="showQR(window._fgLinks[${{i}}].label, window._fgLinks[${{i}}].vless)"><i class="ti ti-qrcode"></i> QR</button>
                 </div>
               </div>
               <div class="cfg-vless">${{esc(l.vless_link)}}</div>
@@ -1762,7 +1999,7 @@ function renderContent(d){{
 }}
 
 function copyAllConfigs(){{
-  const links=window._x4gLinks||[];
+  const links=window._fgLinks||[];
   if(!links.length){{toast('کانفیگی برای کپی نیست','');return}}
   const text=links.map(l=>l.vless).join('\\n');
   navigator.clipboard.writeText(text).then(()=>toast('همه‌ی '+links.length+' کانفیگ کپی شد ✓','ok'));
